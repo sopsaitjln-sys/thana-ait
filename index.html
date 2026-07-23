@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>थाना एट, जिला जालौन - अपराध रजिस्टर</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>body{font-family:'Noto Sans Devanagari',system-ui,sans-serif}</style>
+</head>
+<body class="bg-[#f3f5f9] min-h-screen text-slate-800">
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" class="fixed inset-0 z-50 bg-[#0f1f4a]/90 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8">
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-[#1e3a8a] rounded-full flex items-center justify-center mx-auto mb-3 text-white text-2xl">⚖️</div>
+      <h1 class="text-xl font-bold text-[#1e3a8a]">थाना एट, जिला जालौन</h1>
+      <p class="text-sm text-slate-500">अपराध रजिस्टर प्रबंधन प्रणाली - लॉगिन</p>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="text-sm font-semibold">भूमिका चुनें</label>
+        <select id="loginRole" class="w-full mt-1 border rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-600 outline-none">
+          <option value="admin">थानाध्यक्ष (Admin)</option>
+          <option value="vivechak">विवेचक</option>
+        </select>
+      </div>
+      <div id="vivechakLoginSelectWrap" class="hidden">
+        <label class="text-sm font-semibold">विवेचक चुनें</label>
+        <select id="loginVivechakSelect" class="w-full mt-1 border rounded-lg px-3 py-2.5"></select>
+      </div>
+      <div id="adminNameWrap">
+        <label class="text-sm font-semibold">नाम</label>
+        <input id="loginName" class="w-full mt-1 border rounded-lg px-3 py-2.5" value="थानाध्यक्ष, थाना एट" />
+      </div>
+      <div>
+        <label class="text-sm font-semibold">पासवर्ड</label>
+        <input id="loginPass" type="password" class="w-full mt-1 border rounded-lg px-3 py-2.5" placeholder="पासवर्ड" />
+        <!-- hint हटाया गया - सुरक्षा के लिए -->
+      </div>
+      <button onclick="doLogin()" class="w-full bg-[#1e3a8a] text-white py-3 rounded-xl font-semibold hover:bg-[#162c6b]">लॉगिन करें</button>
+      <p id="loginErr" class="text-red-600 text-sm hidden text-center"></p>
+    </div>
+  </div>
+</div>
+
+<div class="flex min-h-screen">
+  <!-- SIDEBAR -->
+  <aside class="w-72 bg-white border-r shadow-sm hidden md:flex flex-col">
+    <div class="p-6 border-b">
+      <h2 class="font-bold text-[#1e3a8a] text-lg leading-tight">थाना एट</h2>
+      <p class="text-xs text-slate-500">जिला जालौन (उ0प्र0) • अपराध रजिस्टर</p>
+      <div class="mt-3 bg-blue-50 text-[#1e3a8a] text-xs px-3 py-2 rounded-lg">मु0अ0सं0 प्रबंधन प्रणाली</div>
+    </div>
+    <nav class="flex-1 p-3 space-y-1 text-[14px]">
+      <button data-page="dashboard" class="navBtn w-full text-left px-4 py-3 rounded-xl bg-blue-600 text-white font-semibold">📊 डैशबोर्ड</button>
+      <button data-page="cases" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">📝 मुकदमा प्रबंधन</button>
+      <button data-page="pending" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">⏳ लंबित आरोप पत्र / FR <span id="pendingBadge" class="ml-2 bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-full">0</span></button>
+      <button data-page="vivechak" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">👮 विवेचक प्रबंधन</button>
+      <button data-page="cloud" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">☁️ क्लाउड / समन्वय</button>
+    </nav>
+    <div class="p-4 border-t">
+      <div class="text-xs text-slate-500">लॉगिन: <span id="sideUser" class="font-semibold text-slate-700"></span></div>
+      <button onclick="doLogout()" class="mt-2 w-full border rounded-lg py-2 text-sm hover:bg-slate-50">लॉगआउट</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1">
+    <!-- TOP BAR MOBILE -->
+    <div class="md:hidden bg-white border-b p-3 flex justify-between items-center sticky top-0 z-20">
+      <div><p class="font-bold text-[#1e3a8a]">थाना एट, जालौन</p><p class="text-[11px] text-slate-500">अपराध रजिस्टर</p></div>
+      <select id="mobNav" class="border rounded-lg px-2 py-1.5 text-sm">
+        <option value="dashboard">डैशबोर्ड</option><option value="cases">मुकदमा</option><option value="pending">लंबित</option><option value="vivechak">विवेचक</option><option value="cloud">क्लाउड</option>
+      </select>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page p-4 md:p-6">
+      <div class="flex justify-between items-center mb-2"><h1 class="text-xl font-bold">डैशबोर्ड - थाना एट</h1><span id="syncStatus" class="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full">● लोकल मोड</span></div>
+      <!-- YEAR-WISE FILTER FOR DASHBOARD -->
+      <div class="flex flex-wrap gap-2 mb-4 bg-white p-3 rounded-xl border shadow-sm items-center">
+        <label class="text-xs font-semibold">वर्ष फिल्टर:</label>
+        <select id="dashboardYearFilter" class="border rounded-lg px-3 py-2 text-sm">
+          <option value="all">सभी वर्ष</option>
+        </select>
+        <label class="text-xs font-semibold ml-2">विवेचक फिल्टर:</label>
+        <select id="dashboardVivechakFilter" class="border rounded-lg px-3 py-2 text-sm">
+          <option value="all">सभी विवेचक</option>
+        </select>
+        <span id="dashboardFilterInfo" class="text-[11px] text-slate-500 ml-2"></span>
+        <button onclick="clearDashboardFilters()" class="ml-auto text-xs border px-3 py-1.5 rounded-full bg-slate-50 hover:bg-white">फिल्टर साफ</button>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border"><p class="text-xs text-slate-500">कुल मु0अ0सं0</p><p id="statTotal" class="text-3xl font-bold mt-1">0</p></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border"><p class="text-xs text-slate-500">लंबित विवेचना</p><p id="statPending" class="text-3xl font-bold mt-1 text-red-600">0</p></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border"><p class="text-xs text-slate-500">आरोप पत्र दाखिल</p><p id="statChallan" class="text-3xl font-bold mt-1 text-blue-600">0</p></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border"><p class="text-xs text-slate-500">अंतिम रिपोर्ट / खात्मा</p><p id="statFR" class="text-3xl font-bold mt-1 text-slate-600">0</p></div>
+      </div>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="md:col-span-2 bg-white rounded-2xl border shadow-sm p-5">
+          <h3 class="font-semibold mb-3">विवेचकवार लंबित सार (थानाध्यक्ष दृश्य)</h3>
+          <div id="vivechakSummary" class="space-y-2"></div>
+        </div>
+        <div class="bg-white rounded-2xl border shadow-sm p-5">
+          <h3 class="font-semibold mb-3">हाल के मुकदमे</h3>
+          <div id="recentCases" class="space-y-2 text-sm"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASES -->
+    <section id="page-cases" class="page hidden p-4 md:p-6">
+      <div class="flex justify-between items-center mb-4"><h1 class="text-xl font-bold">मुकदमा प्रबंधन</h1><div class="flex gap-2"><button onclick="exportCSV()" class="border px-4 py-2 rounded-xl text-sm bg-white">CSV डाउनलोड</button><button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm">Excel डाउनलोड</button><button onclick="exportJSON()" class="border px-4 py-2 rounded-xl text-sm bg-white">बैकअप JSON</button><button onclick="document.getElementById('importFile').click()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm">बैकअप रिस्टोर</button><input type="file" id="importFile" accept=".json" class="hidden" onchange="importBackup(event)"></div></div>
+      <div class="bg-white rounded-2xl border shadow-sm p-5 mb-6">
+        <h3 id="formTitle" class="font-semibold mb-4">नया मुकदमा जोड़ें - थाना एट</h3>
+        <form id="caseForm" class="grid md:grid-cols-2 gap-4">
+          <div><label class="text-xs font-semibold">मु0अ0सं0 *</label><input id="f_mu" required class="w-full border rounded-lg px-3 py-2.5 mt-1" placeholder="जैसे 123/2025"></div>
+          <div><label class="text-xs font-semibold">धारा</label><input id="f_dhara" class="w-full border rounded-lg px-3 py-2.5 mt-1" placeholder="जैसे 103(1) BNS, 115(2)"></div>
+          <div><label class="text-xs font-semibold">दिनांक घटना</label><input id="f_ghatnaDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+          <div><label class="text-xs font-semibold">दिनांक सूचना</label><input id="f_suchnaDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+          <div><label class="text-xs font-semibold">घटना स्थल</label><input id="f_sthal" class="w-full border rounded-lg px-3 py-2.5 mt-1" placeholder="जैसे ग्राम ऐर, कस्बा एट, थाना एट"></div>
+          <div><label class="text-xs font-semibold">विवेचक *</label><div class="flex gap-2 mt-1"><select id="f_vivechak" class="flex-1 border rounded-lg px-3 py-2.5"></select><button type="button" onclick="goPage('vivechak')" class="text-xs border px-2 rounded-lg bg-blue-50 text-blue-700">+ जोड़ें</button></div></div>
+          <div><label class="text-xs font-semibold">वादी मुकदमा *</label><input id="f_wadi" required class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+          <div><label class="text-xs font-semibold">बनाम (अभियुक्त)</label><input id="f_banam" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+          <div class="md:col-span-2"><label class="text-xs font-semibold">घटना का संक्षिप्त विवरण</label><textarea id="f_vivaran" rows="3" class="w-full border rounded-lg px-3 py-2.5 mt-1"></textarea></div>
+          <div><label class="text-xs font-semibold">आरोप पत्र / अंतिम रिपोर्ट</label><select id="f_status" class="w-full border rounded-lg px-3 py-2.5 mt-1"><option>लंबित</option><option>आरोप पत्र</option><option>अंतिम रिपोर्ट</option><option>खात्मा</option></select></div>
+          <div><label class="text-xs font-semibold">आरोप पत्र / FR दिनांक</label><input id="f_statusDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+          <div class="md:col-span-2 flex gap-2"><button type="submit" class="bg-[#1e3a8a] text-white px-6 py-2.5 rounded-xl font-semibold">सेव करें</button><button type="button" onclick="resetForm()" class="border px-6 py-2.5 rounded-xl">रद्द करें</button><span id="formMsg" class="text-sm ml-3 self-center text-green-700"></span></div>
+        </form>
+      </div>
+      <div class="bg-white rounded-2xl border shadow-sm p-4">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+          <h3 class="font-semibold">समस्त मुकदमे - थाना एट</h3>
+          <div class="flex flex-wrap gap-2 items-center">
+            <select id="casesSortField" class="border rounded-full px-3 py-1.5 text-xs">
+              <option value="muAsNo">मु0अ0सं0 से शॉर्ट</option>
+              <option value="dinankSuchna">दिनांक सूचना से शॉर्ट</option>
+            </select>
+            <select id="casesSortOrder" class="border rounded-full px-3 py-1.5 text-xs">
+              <option value="asc">A to Z (आरोही)</option>
+              <option value="desc">Z to A (अवरोही)</option>
+            </select>
+            <input id="caseSearch" placeholder="खोजें: मु0अ0सं0, धारा, वादी, बनाम" class="border rounded-full px-4 py-2 text-sm w-56">
+          </div>
+        </div>
+        <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b">
+            <tr>
+              <th class="text-left py-2 px-2 w-12">#</th>
+              <th class="text-left py-2 px-2 cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('muAsNo')">मु0अ0सं0 <span id="sortMuIcon">↕️</span></th>
+              <th class="text-left">धारा</th>
+              <th class="text-left">वादी / बनाम</th>
+              <th class="text-left">विवेचक</th>
+              <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('dinankSuchna')">दिनांक सूचना <span id="sortDateIcon">↕️</span></th>
+              <th class="text-left">स्थिति</th>
+              <th>Action</th>
+            </tr>
+          </thead><tbody id="casesTbody"></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- PENDING -->
+    <section id="page-pending" class="page hidden p-4 md:p-6">
+      <h1 class="text-xl font-bold mb-1">लंबित आरोप पत्र / अंतिम रिपोर्ट - थाना एट</h1><p class="text-xs text-slate-500 mb-4">विवेचकवार और अवधिवार फिल्टर से पेंडिंग विवेचना देखें</p>
+      <div class="bg-white rounded-2xl border shadow-sm p-4 mb-4">
+        <div class="grid md:grid-cols-4 gap-3">
+          <div><label class="text-[11px] font-semibold">विवेचक चुनें</label><select id="filterVivechak" class="w-full border rounded-lg px-3 py-2.5 mt-1"><option value="all">सभी विवेचक</option></select></div>
+          <div><label class="text-[11px] font-semibold">अवधि चुनें</label><select id="filterAvadhi" class="w-full border rounded-lg px-3 py-2.5 mt-1"><option value="all">सभी अवधि</option><option value="today">आज</option><option value="7">पिछले 7 दिन</option><option value="15">पिछले 15 दिन</option><option value="30">पिछले 30 दिन</option><option value="90">पिछले 3 माह</option><option value="180">पिछले 6 माह</option><option value="365">पिछले 12 माह</option><option value="custom">कस्टम अवधि</option></select></div>
+          <div><label class="text-[11px] font-semibold">फिल्टर आधार</label><select id="filterBase" class="w-full border rounded-lg px-3 py-2.5 mt-1"><option value="suchna">दिनांक सूचना</option><option value="ghatna">दिनांक घटना</option></select></div>
+          <div><label class="text-[11px] font-semibold">क्रमबद्ध करें</label><select id="filterSort" class="w-full border rounded-lg px-3 py-2.5 mt-1"><option value="pending_desc">लंबित अधिक से कम</option><option value="pending_asc">लंबित कम से अधिक</option><option value="suchna_desc">सूचना नवीनतम</option><option value="suchna_asc">सूचना पुराना</option><option value="mu_asc">मु0अ0सं0 क्रम</option></select></div>
+        </div>
+        <div id="customDateRow" class="hidden grid md:grid-cols-2 gap-3 mt-3"><div><label class="text-xs">से दिनांक</label><input id="customFrom" type="date" class="w-full border rounded-lg px-3 py-2"></div><div><label class="text-xs">तक दिनांक</label><input id="customTo" type="date" class="w-full border rounded-lg px-3 py-2"></div></div>
+        <div class="flex flex-wrap gap-2 mt-4 items-center"><div id="vivechakChips" class="flex flex-wrap gap-2"></div><button onclick="clearFilters()" class="ml-auto text-xs border px-3 py-1.5 rounded-full">फिल्टर साफ करें</button></div>
+        <div class="mt-3 text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><span id="filterInfo">कुल 0 में से 0 दिखाए जा रहे हैं</span></div>
+        <div class="mt-3"><p class="text-[11px] font-semibold mb-2">विवेचकवार सार - क्लिक करके फिल्टर लगाएं:</p><div id="pendingVivechakSummary" class="flex flex-wrap gap-2"></div></div>
+      </div>
+      <div class="bg-white rounded-2xl border shadow-sm p-4"><div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b"><tr><th class="text-left py-2">मु0अ0सं0</th><th class="text-left">विवेचक</th><th class="text-left">वादी / बनाम</th><th class="text-left">सूचना दिनांक</th><th class="text-left">लंबित दिन</th><th>निस्तारण</th></tr></thead><tbody id="pendingTbody"></tbody></table></div><p id="pendingEmpty" class="hidden text-center text-sm text-slate-500 py-10">इस फिल्टर में कोई लंबित विवेचना नहीं मिली</p></div>
+      <!-- VIVECHAK-WISE COMPLETE PENDING DISPLAY -->
+      <div class="bg-white rounded-2xl border shadow-sm p-4 mt-4">
+        <h3 class="font-semibold text-[#1e3a8a] mb-2">👮 विवेचकवार सम्पूर्ण लम्बित अभियोग (वर्षवार फ़िल्टर सहित)</h3>
+        <p class="text-[11px] text-slate-500 mb-3">नीचे हर विवेचक के पास कुल कितने लम्बित केस हैं, और उनके मु0अ0सं0 की पूरी सूची दिख रही है। डैशबोर्ड वर्ष फिल्टर से यह भी फ़िल्टर होगा।</p>
+        <div class="overflow-auto">
+          <table class="w-full text-sm">
+            <thead class="text-xs text-slate-500 border-b bg-slate-50"><tr><th class="text-left py-2 px-2">विवेचक</th><th class="text-center">कुल लम्बित</th><th class="text-left px-2">सम्पूर्ण लम्बित मु0अ0सं0 सूची</th><th class="text-center">Action</th></tr></thead>
+            <tbody id="investigatorWiseTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIVECHAK MANAGEMENT -->
+    <section id="page-vivechak" class="page hidden p-4 md:p-6">
+      <h1 class="text-xl font-bold mb-1">विवेचक प्रबंधन - थाना एट, जालौन</h1><p class="text-xs text-slate-500 mb-4">मैन्युअली विवेचकों की लिस्ट भरें, यही लिस्ट पूरे ऐप में उपयोग होगी</p>
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl border shadow-sm p-5">
+          <h3 id="vivechakFormTitle" class="font-semibold mb-3">नया विवेचक जोड़ें</h3>
+          <form id="vivechakForm" class="space-y-3">
+            <div><label class="text-xs font-semibold">नाम *</label><input id="v_name" required class="w-full border rounded-lg px-3 py-2.5 mt-1" placeholder="जैसे SI रामप्रकाश"></div>
+            <div><label class="text-xs font-semibold">पद * (मैनुअल एडिट कर सकते हैं)</label>
+            <div class="flex gap-2 mt-1">
+              <input id="v_pad" list="padList" class="flex-1 border rounded-lg px-3 py-2.5" placeholder="जैसे SI, ASI, Inspector या नया पद टाइप करें" required>
+              <datalist id="padList">
+                <option value="SI"></option>
+                <option value="ASI"></option>
+                <option value="Inspector"></option>
+                <option value="SI (प्रशिक्षु)"></option>
+                <option value="Head Constable"></option>
+                <option value="Constable"></option>
+                <option value="SHO"></option>
+                <option value="CO"></option>
+              </datalist>
+              <button type="button" onclick="addCustomPad()" class="text-[11px] border px-3 rounded-lg bg-blue-50 text-blue-700 whitespace-nowrap">+ नया पद सेव</button>
+            </div>
+            <p class="text-[10px] text-slate-500 mt-1">लिस्ट में नहीं है तो नया टाइप करें, सेव हो जाएगा।</p>
+            </div>
+            <div><label class="text-xs font-semibold">मोबाइल नंबर</label><input id="v_mobile" class="w-full border rounded-lg px-3 py-2.5 mt-1" placeholder="98XXXXXXXX"></div>
+            <div><label class="text-xs font-semibold">बैज / बेल्ट नंबर</label><input id="v_badge" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+            <div><label class="text-xs font-semibold">नियुक्ति दिनांक</label><input id="v_date" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
+            <div class="flex gap-2 pt-2"><button type="submit" class="bg-[#1e3a8a] text-white px-5 py-2.5 rounded-xl text-sm font-semibold">सेव करें</button><button type="button" onclick="resetVivechakForm()" class="border px-5 py-2.5 rounded-xl text-sm">रद्द</button></div>
+          </form>
+        </div>
+        <div class="md:col-span-2 bg-white rounded-2xl border shadow-sm p-4">
+          <div class="flex justify-between items-center mb-3"><h3 class="font-semibold">विवेचक सूची</h3><input id="vivechakSearch" placeholder="खोजें" class="border rounded-full px-4 py-2 text-sm w-48"></div>
+          <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b"><tr><th class="text-left py-2">#</th><th class="text-left">नाम / पद</th><th class="text-left">मोबाइल</th><th class="text-left">कुल / लंबित</th><th>Action</th></tr></thead><tbody id="vivechakTbody"></tbody></table></div>
+          <p class="text-[11px] text-slate-500 mt-3">नोट: थानाध्यक्ष ही विवेचक जोड़/हटा सकते हैं। विवेचक लॉगिन पर यह पेज Read Only रहेगा।</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLOUD -->
+    <section id="page-cloud" class="page hidden p-4 md:p-6">
+      <h1 class="text-xl font-bold mb-1">क्लाउड समन्वय - थाना एट</h1><p class="text-xs text-slate-500 mb-4">सबका डेटा एक जगह - Google Sheet या Firebase से जोड़ें</p>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-2xl border shadow-sm p-5">
+          <h3 class="font-semibold text-[#1e3a8a]">Option A: Google Sheet (Recommended)</h3>
+          <ol class="text-xs list-decimal pl-4 space-y-1 mt-3 text-slate-700">
+            <li>नई Google Sheet बनाएं नाम <b>Ait_Jalaun_Thana_Cases</b></li>
+            <li>Extensions → Apps Script खोलें</li>
+            <li>नीचे कोड पेस्ट करें, Save करें</li>
+            <li>Deploy → New Deployment → Web App → Anyone with link</li>
+            <li>URL कॉपी करके नीचे पेस्ट करें</li>
+          </ol>
+          <div class="mt-4 bg-slate-900 text-green-200 p-3 rounded-xl text-[11px] overflow-auto max-h-64 relative"><button onclick="copyCode()" class="absolute top-2 right-2 bg-white text-slate-900 text-[11px] px-2 py-1 rounded">Copy</button><pre id="appsScriptCode">function doGet(){var s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Ait_Jalaun_Cases");if(!s)return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);var r=s.getDataRange().getValues();if(r.length<2)return ContentService.createTextOutput("[]").setMimeType(ContentService.MimeType.JSON);var h=r[0],o=[];for(var i=1;i<r.length;i++){var obj={};for(var j=0;j<h.length;j++)obj[h[j]]=r[i][j];o.push(obj);}return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);}
+function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var s=ss.getSheetByName("Ait_Jalaun_Cases");if(!s){s=ss.insertSheet("Ait_Jalaun_Cases");s.appendRow(["muAsNo","dhara","dinankGhatna","dinankSuchna","ghatnaSthal","wadi","banam","vivechak","vivaran","aaropPatraStatus","aaropPatraDinank","updatedAt"]);}var d=JSON.parse(e.postData.contents);var vals=s.getDataRange().getValues();var idx=-1;for(var i=1;i<vals.length;i++){if(vals[i][0]==d.muAsNo){idx=i+1;break;}}var row=[d.muAsNo,d.dhara,d.dinankGhatna,d.dinankSuchna,d.ghatnaSthal,d.wadi,d.banam,d.vivechak,d.vivaran,d.aaropPatraStatus,d.aaropPatraDinank,new Date()];if(idx>0)s.getRange(idx,1,1,row.length).setValues([row]);else s.appendRow(row);return ContentService.createTextOutput(JSON.stringify({ok:true})).setMimeType(ContentService.MimeType.JSON);}</pre></div>
+          <div class="mt-4"><label class="text-xs font-semibold">Web App URL पेस्ट करें</label><input id="cloudUrl" class="w-full border rounded-lg px-3 py-2.5 mt-1" placeholder="https://script.google.com/.../exec"><div class="flex gap-2 mt-3"><button onclick="testCloud()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm">टेस्ट कनेक्शन</button><button onclick="syncNow()" class="border px-4 py-2 rounded-lg text-sm">अभी Sync</button><label class="flex items-center gap-2 text-xs ml-2"><input id="autoSync" type="checkbox" checked> ऑटो Sync</label></div><p id="cloudMsg" class="text-xs mt-2"></p></div>
+        </div>
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <h3 class="font-semibold">Option B: Firebase (Advanced)</h3><p class="text-xs text-slate-500 mt-1">Firebase Console में प्रोजेक्ट बनाएं, Firestore Enable करें</p>
+            <label class="text-xs font-semibold mt-3 block">Firebase Config JSON</label><textarea id="fbConfig" rows="5" class="w-full border rounded-lg px-3 py-2 mt-1 text-xs" placeholder='{"apiKey":"...","projectId":"..."}'></textarea>
+            <label class="text-xs font-semibold mt-2 block">Collection Name</label><input id="fbCollection" value="ait_jalaun_cases" class="w-full border rounded-lg px-3 py-2 mt-1 text-sm">
+            <button onclick="saveFirebase()" class="mt-3 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">Firebase सेव करें</button>
+            <button onclick="testFirebase()" class="mt-3 ml-2 border px-4 py-2 rounded-lg text-sm">टेस्ट</button>
+            <p id="fbMsg" class="text-xs mt-2"></p>
+            <!-- FINAL SECURE SUBMIT -->
+            <div class="mt-6 p-4 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl text-white">
+              <h4 class="font-bold text-sm">🔒 Final Secure Submit</h4>
+              <p class="text-[11px] mt-1 opacity-90">सब कुछ चेक करने के बाद यहाँ क्लिक करें। सभी केस और विवेचक Firebase पर स्थायी रूप से सुरक्षित हो जाएंगे। दोबारा खोलने पर यही सुरक्षित डेटा दिखेगा।</p>
+              <button id="finalSubmitBtn" onclick="finalSecureSubmit()" class="mt-3 w-full bg-white text-blue-700 py-3 rounded-xl font-bold text-sm hover:bg-blue-50">✅ Final Submit - Firebase पर सुरक्षित करें</button>
+              <p id="finalSecureInfo" class="text-[10px] mt-2 opacity-80"></p>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <h3 class="font-semibold">थाना जानकारी</h3><div class="grid grid-cols-2 gap-3 mt-3"><div><label class="text-xs">थाना नाम</label><input id="setThana" value="थाना एट" class="w-full border rounded-lg px-3 py-2 mt-1 text-sm"></div><div><label class="text-xs">जिला</label><input id="setDistrict" value="जालौन" class="w-full border rounded-lg px-3 py-2 mt-1 text-sm"></div></div><button onclick="saveThanaInfo()" class="mt-3 border px-4 py-2 rounded-lg text-sm">सेव करें</button>
+            <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px]">Web App URL गोपनीय रखें। रोज शाम को बैकअप JSON जरूर डाउनलोड करके पेन ड्राइव में रखें - यही आपका सबसे सुरक्षित तरीका है। ब्राउज़र का Cache / History कभी Clear न करें।, केवल थाने के स्टाफ के साथ शेयर करें। ऑफलाइन होने पर डेटा लोकल सेव होगा, बाद में Sync हो जाएगा।</div>
+          </div>
+          <div class="bg-white rounded-2xl border shadow-sm p-5 mt-4">
+            <h3 class="font-semibold text-[#1e3a8a]">🔐 सुरक्षा - पासवर्ड बदलें</h3>
+            <p id="currentPassInfo" class="text-[11px] text-slate-500 mt-1 mb-3">वर्तमान - थानाध्यक्ष: thana@123 | विवेचक: 1234</p>
+            <div class="grid md:grid-cols-2 gap-5">
+              <div class="border rounded-xl p-4 bg-slate-50">
+                <h4 class="text-sm font-semibold mb-2">थानाध्यक्ष पासवर्ड</h4>
+                <label class="text-[11px]">वर्तमान पासवर्ड</label><input id="curAdminPass" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-2 text-sm" placeholder="पुराना">
+                <label class="text-[11px]">नया पासवर्ड</label><input id="newAdminPass" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-2 text-sm" placeholder="नया">
+                <label class="text-[11px]">कन्फर्म</label><input id="confirmAdminPass" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-2 text-sm" placeholder="फिर से">
+                <button onclick="changeAdminPassword()" class="w-full bg-[#1e3a8a] text-white py-2 rounded-lg text-sm font-semibold">थानाध्यक्ष अपडेट करें</button>
+                <p id="adminPassMsg" class="text-[11px] text-green-700 mt-2"></p>
+              </div>
+              <div class="border rounded-xl p-4 bg-slate-50">
+                <h4 class="text-sm font-semibold mb-2">विवेचक कॉमन पासवर्ड</h4>
+                <label class="text-[11px]">वर्तमान पासवर्ड</label><input id="curVivechakPass" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-2 text-sm" placeholder="पुराना">
+                <label class="text-[11px]">नया पासवर्ड</label><input id="newVivechakPass" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-2 text-sm" placeholder="नया">
+                <label class="text-[11px]">कन्फर्म</label><input id="confirmVivechakPass" type="password" class="w-full border rounded-lg px-3 py-2 mt-1 mb-2 text-sm" placeholder="फिर से">
+                <button onclick="changeVivechakPassword()" class="w-full bg-green-600 text-white py-2 rounded-lg text-sm font-semibold">विवेचक अपडेट करें</button>
+                <p id="vivechakPassMsg" class="text-[11px] text-green-700 mt-2"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+          <!-- EXCEL / CSV IMPORT -->
+          <div class="bg-white rounded-2xl border-2 border-dashed border-blue-300 shadow-sm p-5 mt-4 bg-blue-50/30">
+            <h3 class="font-semibold text-[#1e3a8a]">📥 पुराना डेटा इम्पोर्ट (Excel / CSV)</h3>
+            <p class="text-[11px] text-slate-600 mt-1">पुरानी Excel/CSV से डेटा इम्पोर्ट करें, फिर Final Submit से सुरक्षित करें।</p>
+            <div class="mt-3 grid md:grid-cols-3 gap-3">
+              <div class="md:col-span-2">
+                <input id="importFileInput" type="file" accept=".xlsx,.xls,.csv" class="w-full mt-1 border-2 border-dashed border-blue-300 rounded-lg px-3 py-2.5 bg-white text-sm file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:bg-blue-600 file:text-white file:text-xs">
+                <div class="flex gap-2 mt-2">
+                  <button onclick="handleImportFile()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">📥 इम्पोर्ट करें</button>
+                  <button onclick="downloadImportTemplate()" class="border bg-white px-4 py-2 rounded-lg text-sm">📄 सैंपल डाउनलोड</button>
+                </div>
+                <p id="importMsg" class="text-xs mt-2"></p>
+                <div id="importPreview" class="mt-3 max-h-48 overflow-auto text-[11px] bg-white border rounded-lg p-2 hidden"></div>
+              </div>
+              <div class="bg-white border rounded-xl p-3 text-[11px] leading-5">
+                <b>सपोर्टेड कॉलम:</b><br>मु0अ0सं0, धारा, दिनांक घटना, दिनांक सूचना, घटना स्थल, वादी, बनाम, विवेचक, विवरण, स्थिति, दिनांक
+              </div>
+            </div>
+          </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Nistaran Modal -->
+<div id="nistaranModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-40 p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-sm"><h3 class="font-semibold mb-3">निस्तारण करें</h3><p id="nistaranMu" class="text-sm text-slate-600 mb-3"></p><label class="text-xs font-semibold">स्थिति चुनें</label><select id="nistaranStatus" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-3"><option>आरोप पत्र</option><option>अंतिम रिपोर्ट</option><option>खात्मा</option></select><label class="text-xs font-semibold">दिनांक</label><input id="nistaranDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-4"><div class="flex gap-2"><button onclick="saveNistaran()" class="bg-[#1e3a8a] text-white px-5 py-2 rounded-xl text-sm">सेव</button><button onclick="closeNistaran()" class="border px-5 py-2 rounded-xl text-sm">रद्द</button></div></div></div>
+
+<script>
+
+
+// ===== FINAL SECURE - NO AUTO DATA + PASSWORD CHANGE + FINAL SUBMIT =====
+const DEFAULT_FB_CONFIG = {
+  "apiKey": "AIzaSyBa0OorIRQCiu-mLncAK2_tCXqqy6IeYxU",
+  "authDomain": "ait-jalaun-thana.firebaseapp.com",
+  "projectId": "ait-jalaun-thana",
+  "storageBucket": "ait-jalaun-thana.firebasestorage.app",
+  "messagingSenderId": "694051282182",
+  "appId": "1:694051282182:web:33af7b6448fb3a8c975287"
+};
+const DEFAULT_FB_COLLECTION = "ait_jalaun_cases";
+const DEFAULT_VIVECHAK_COLLECTION = "ait_jalaun_vivechaks";
+const LS_CASES='up_thana_ait_cases', LS_VIVECHAK='ait_jalaun_vivechak_list', LS_CLOUD='ait_cloud_url', LS_AUTO='ait_auto_sync', LS_AUTH='ait_auth', LS_THANA='ait_thana_info', LS_FB='ait_fb_config', LS_ADMIN_PASS='ait_admin_pass', LS_VIVECHAK_PASS='ait_vivechak_pass', LS_FINAL='ait_final_secure';
+function getAdminPass(){return localStorage.getItem(LS_ADMIN_PASS)||'thana@123';}
+function getVivechakPass(){return localStorage.getItem(LS_VIVECHAK_PASS)||'1234';}
+let cases=[], vivechaks=[], editMu=null, editVivechakId=null, nistaranMuNo=null;
+
+let dashboardYearFilter='all';
+
+let casesSortField='muAsNo';
+let casesSortOrder='asc';
+function sortCasesBy(field){
+  if(casesSortField===field){
+    casesSortOrder = casesSortOrder==='asc' ? 'desc' : 'asc';
+  } else {
+    casesSortField=field;
+    casesSortOrder='asc';
+  }
+  const f=document.getElementById('casesSortField'); if(f) f.value=field;
+  const o=document.getElementById('casesSortOrder'); if(o) o.value=casesSortOrder;
+  renderCasesTable();
+}
+
+let dashboardVivechakFilter='all';
+function getCaseYear(c){
+  const tryParse = (s)=>{
+    if(!s) return null;
+    s=String(s).trim();
+    if(s===''||s==='उपलब्ध नहीं') return null;
+    // YYYY-MM-DD
+    let m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m) return m[1];
+    // DD/MM/YYYY
+    m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m) return m[3];
+    // DD-MM-YYYY or DD.MM.YYYY
+    m=s.match(/^(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})$/);
+    if(m) return m[3];
+    // Fallback Date parsing (for ISO or other)
+    const d=new Date(s);
+    if(!isNaN(d.getTime()) && d.getFullYear()>1900) return String(d.getFullYear());
+    return null;
+  };
+  let y = tryParse(c.dinankSuchna) || tryParse(c.dinankGhatna) || tryParse(c.aaropPatraDinank);
+  if(y) return y;
+  const mu = String(c.muAsNo||'').trim();
+  // Extract year from muAsNo like 05/2026, 106/2025, 01/2006
+  let m = mu.match(/\/(\d{4})$/);
+  if(m) return m[1];
+  m = mu.match(/(20\d{2}|19\d{2})/);
+  if(m) return m[1] || m[0];
+  return 'Unknown';
+}
+
+
+function excelSerialToISO(serial){
+  const utc_days = Math.floor(serial - 25569);
+  const utc_value = utc_days * 86400;
+  const date = new Date(utc_value * 1000);
+  const frac = serial - Math.floor(serial);
+  if(frac>0){ let secs=Math.round(86400*frac); date.setUTCHours(Math.floor(secs/3600), Math.floor((secs%3600)/60), secs%60); }
+  return date.toISOString().slice(0,10);
+}
+function parseDateValue(v){
+  if(v===null||v===undefined||v==='') return '';
+  if(v instanceof Date){ return isNaN(v.getTime()) ? '' : v.toISOString().slice(0,10); }
+  if(typeof v==='number'){ if(v>2000 && v<100000) return excelSerialToISO(v); return String(v); }
+  let s=String(v).trim();
+  if(s===''||s==='उपलब्ध नहीं'||s==='-'||s.toLowerCase()==='na') return '';
+  if(/^\d{4,5}(\.\d+)?$/.test(s)){ const n=parseFloat(s); if(n>2000 && n<60000) return excelSerialToISO(n); }
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m){ return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+  m=s.match(/^(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})$/);
+  if(m){ return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d=new Date(s); if(!isNaN(d.getTime())) return d.toISOString().slice(0,10);
+  return s;
+}
+function formatDateForExport(iso){
+  if(!iso) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(iso)){ const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+  return iso;
+}
+
+
+const LS_PADS='ait_custom_pads';
+function loadCustomPads(){
+  try{
+    const custom=JSON.parse(localStorage.getItem(LS_PADS)||'[]');
+    const dl=document.getElementById('padList');
+    if(!dl) return;
+    custom.forEach(p=>{
+      if(![...dl.options].some(o=>o.value===p)){
+        const op=document.createElement('option'); op.value=p; dl.appendChild(op);
+      }
+    });
+  }catch(e){}
+}
+function addCustomPad(){
+  const input=document.getElementById('v_pad');
+  const val=(input?.value||'').trim();
+  if(!val){ alert('पद का नाम लिखें'); return; }
+  const dl=document.getElementById('padList');
+  if(dl && ![...dl.options].some(o=>o.value===val)){
+    const op=document.createElement('option'); op.value=val; dl.appendChild(op);
+  }
+  let custom=[];
+  try{ custom=JSON.parse(localStorage.getItem(LS_PADS)||'[]'); }catch(e){}
+  if(!custom.includes(val)){ custom.push(val); localStorage.setItem(LS_PADS, JSON.stringify(custom)); }
+  alert(`'${val}' पद लिस्ट में जोड़ दिया गया`);
+}
+
+function getAvailableYears(){
+  const ys=new Set();
+  cases.forEach(c=>{
+    const y=getCaseYear(c);
+    if(y && y!=='Unknown' && /^\d{4}$/.test(y)) ys.add(y);
+  });
+  // Fallback: extract any year from muAsNo and dates if set empty
+  if(ys.size===0 && cases.length>0){
+    cases.forEach(c=>{
+      const mu=String(c.muAsNo||'');
+      const m1=mu.match(/(20\d{2}|19\d{2})/);
+      if(m1) ys.add(m1[1]||m1[0]);
+      const d1=String(c.dinankSuchna||''); const m2=d1.match(/(20\d{2}|19\d{2})/); if(m2) ys.add(m2[1]||m2[0]);
+      const d2=String(c.dinankGhatna||''); const m3=d2.match(/(20\d{2}|19\d{2})/); if(m3) ys.add(m3[1]||m3[0]);
+    });
+  }
+  let arr=Array.from(ys).filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>parseInt(b)-parseInt(a));
+  // If still empty, add current year and last 5 years as fallback so dropdown never empty
+  if(arr.length===0){
+    const cur=new Date().getFullYear();
+    for(let y=cur; y>=cur-10; y--) arr.push(String(y));
+  }
+  return arr;
+}
+
+
+function populateDashboardFilters(){
+  const ys=document.getElementById('dashboardYearFilter');
+  const vs=document.getElementById('dashboardVivechakFilter');
+  if(!ys||!vs) return;
+  const years=getAvailableYears();
+  const curY=ys.value;
+  // Keep existing selection if possible
+  ys.innerHTML='<option value="all">सभी वर्ष</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(curY && (curY==='all' || years.includes(curY) || curY==='')){ ys.value=curY; }
+  // Debug info
+  console.log('populateDashboardFilters years:', years, 'cases:', cases.length);
+  const curV=vs.value;
+  vs.innerHTML='<option value="all">सभी विवेचक</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.naam}</option>`).join('');
+  if(curV) vs.value=curV;
+  // Update info text if years empty
+  const info=document.getElementById('dashboardFilterInfo');
+  if(info && years.length===0){
+    info.textContent = `कुल ${cases.length} केस, वर्ष नहीं मिला - muAsNo: ${cases[0]?cases[0].muAsNo:''}`;
+  }
+}
+
+function getDashboardFilteredCases(){
+  let list=cases;
+  const u=getCurrentUser();
+  if(u&&u.role==='vivechak'){ list=list.filter(c=>c.vivechak===u.name); }
+  if(dashboardYearFilter!=='all'){ list=list.filter(c=>getCaseYear(c)===dashboardYearFilter); }
+  if(dashboardVivechakFilter!=='all'){ list=list.filter(c=>c.vivechak===dashboardVivechakFilter); }
+  return list;
+}
+function clearDashboardFilters(){
+  dashboardYearFilter='all';
+  dashboardVivechakFilter='all';
+  const y=
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter'); if(y) y.value='all';
+  const v=document.getElementById('dashboardVivechakFilter'); if(v) v.value='all';
+  renderAll();
+}
+
+let currentDetailVivechak = '';
+function openInvestigatorDetail(name){
+  currentDetailVivechak = name;
+  const modal = document.getElementById('investigatorDetailModal');
+  const title = document.getElementById('investigatorModalTitle');
+  const sub = document.getElementById('investigatorModalSub');
+  const tbody = document.getElementById('investigatorDetailTbody');
+  const countEl = document.getElementById('investigatorModalCount');
+  if(!modal||!tbody) return;
+  let list = cases.filter(c=>c.aaropPatraStatus==='लंबित');
+  const u = getCurrentUser(); if(u&&u.role==='vivechak') list = list.filter(c=>c.vivechak===u.name);
+  if(dashboardYearFilter!=='all') list = list.filter(c=>getCaseYear(c)===dashboardYearFilter);
+  if(name==='अज्ञात' || name==='अज्ञात/खाली' || name===''){ list = list.filter(c=>!c.vivechak || c.vivechak.trim()==='' || c.vivechak==='अज्ञात'); }
+  else { list = list.filter(c=>c.vivechak===name); }
+  const today = new Date();
+  list = list.sort((a,b)=>{ const da=new Date(a.dinankSuchna||a.dinankGhatna||today); const db=new Date(b.dinankSuchna||b.dinankGhatna||today); return da-db; });
+  if(title) title.textContent = name + ' - कुल ' + list.length + ' लम्बित';
+  if(sub) sub.textContent = (dashboardYearFilter!=='all' ? 'वर्ष: '+dashboardYearFilter+' | ' : '') + 'कुल ' + list.length + ' अभियोग';
+  if(countEl) countEl.textContent = list.length + ' रिकॉर्ड';
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-400">इस विवेचक के पास कोई लम्बित नहीं</td></tr>';
+  } else {
+    tbody.innerHTML = list.map(c=>{
+      const d = new Date(c.dinankSuchna||new Date());
+      const days = Math.max(0, Math.floor((today - d)/86400000));
+      return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2"><div class="font-medium">${c.muAsNo}</div><div class="text-[11px] text-slate-500">${c.dhara||''}</div></td><td class="text-xs"><div>${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.dinankSuchna||''}<div class="text-[10px] text-slate-400">${c.ghatnaSthal||''}</div></td><td class="text-center"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">${days} दिन</span></td><td class="text-center"><button onclick="openNistaran('${c.muAsNo}'); closeInvestigatorDetail();" class="bg-[#1e3a8a] text-white text-xs px-3 py-1 rounded-full mr-1">निस्तारण</button><button onclick="editCase('${c.muAsNo}'); closeInvestigatorDetail();" class="text-blue-600 text-xs border px-2 py-1 rounded-full">Edit</button></td></tr>`;
+    }).join('');
+  }
+  modal.classList.remove('hidden'); modal.classList.add('flex'); document.body.style.overflow='hidden';
+}
+function closeInvestigatorDetail(){ const m=document.getElementById('investigatorDetailModal'); if(m){ m.classList.add('hidden'); m.classList.remove('flex'); } document.body.style.overflow=''; currentDetailVivechak=''; }
+function exportInvestigatorPending(){ if(!currentDetailVivechak) return; let list=cases.filter(c=>c.aaropPatraStatus==='लंबित'); if(currentDetailVivechak==='अज्ञात'){ list=list.filter(c=>!c.vivechak); } else { list=list.filter(c=>c.vivechak===currentDetailVivechak); } if(dashboardYearFilter!=='all') list=list.filter(c=>getCaseYear(c)===dashboardYearFilter); let csv='मु0अ0सं0,धारा,वादी,बनाम,विवेचक,सूचना,लंबित दिन\n'; const today=new Date(); list.forEach(c=>{ const days=Math.floor((today-new Date(c.dinankSuchna||today))/86400000); csv+=`"${c.muAsNo}","${c.dhara}","${c.wadi}","${c.banam}","${c.vivechak}","${c.dinankSuchna}","${days}"\n`; }); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=currentDetailVivechak+'_लंबित_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); }
+function setVivechakFilterAndGo(name){ openInvestigatorDetail(name); }
+
+
+function renderInvestigatorWisePending(){
+  const tb=document.getElementById('investigatorWiseTbody'); if(!tb) return;
+  let pend=cases.filter(c=>c.aaropPatraStatus==='लंबित');
+  const u=getCurrentUser(); if(u&&u.role==='vivechak') pend=pend.filter(c=>c.vivechak===u.name);
+  if(dashboardYearFilter!=='all') pend=pend.filter(c=>getCaseYear(c)===dashboardYearFilter);
+  const g={};
+  pend.forEach(c=>{ const n=c.vivechak||'अज्ञात'; if(!g[n]) g[n]=[]; g[n].push(c); });
+  vivechaks.forEach(v=>{ if(!g[v.naam]) g[v.naam]=[]; });
+  const rows=Object.entries(g).sort((a,b)=>b[1].length-a[1].length).map(([name,list])=>{
+    const displayCount=8; const shown=list.slice(0,displayCount); const rem=list.length-displayCount; let mu=shown.map(c=>'<span class="inline-block bg-slate-100 border px-2 py-0.5 rounded-full text-[11px] m-0.5">'+c.muAsNo+'</span>').join(''); if(rem>0) mu+='<span class="inline-block bg-amber-100 text-amber-800 border px-2 py-0.5 rounded-full text-[11px] m-0.5">+'+rem+' और</span>'; if(!mu) mu='<span class="text-slate-400 text-xs">कोई नहीं</span>';
+    return '<tr class="border-b"><td class="py-2 px-2 font-medium">'+name+'</td><td class="text-center"><span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold">'+list.length+'</span></td><td class="px-2 py-2"><div class="flex flex-wrap">'+mu+'</div></td><td class="text-center"><button onclick="setVivechakFilterAndGo(\''+name+'\')" class="text-blue-600 text-xs border px-2 py-1 rounded-full">देखें</button></td></tr>';
+  }).join('');
+  tb.innerHTML=rows||'<tr><td colspan="4" class="py-6 text-center text-slate-400">कोई लम्बित नहीं</td></tr>';
+}
+
+
+let fbApp=null, fbDb=null;
+const defaultVivechaks = [];
+const sampleCases = [];
+function loadAll(){
+  let storedCases=JSON.parse(localStorage.getItem(LS_CASES)||'null');
+  cases=(storedCases&&storedCases.length>=0)?storedCases:[];
+  let storedV=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');
+  vivechaks=(storedV&&storedV.length>=0)?storedV:[];
+  try{const cu=document.getElementById('cloudUrl');if(cu)cu.value=localStorage.getItem(LS_CLOUD)||'';}catch(e){}
+  try{const as=document.getElementById('autoSync');if(as)as.checked=(localStorage.getItem(LS_AUTO)||'true')==='true';}catch(e){}
+  try{
+    const fb=JSON.parse(localStorage.getItem(LS_FB)||'null');
+    if(fb&&fb.config){const el=document.getElementById('fbConfig');if(el)el.value=JSON.stringify(fb.config,null,2);const el2=document.getElementById('fbCollection');if(el2)el2.value=fb.collection||DEFAULT_FB_COLLECTION;}
+    else{const el=document.getElementById('fbConfig');if(el&&!el.value)el.value=JSON.stringify(DEFAULT_FB_CONFIG,null,2);const el2=document.getElementById('fbCollection');if(el2&&!el2.value)el2.value=DEFAULT_FB_COLLECTION;}
+  }catch(e){}
+  try{const thana=JSON.parse(localStorage.getItem(LS_THANA)||'null');if(thana){const a=document.getElementById('setThana');if(a)a.value=thana.thanaName;const b=document.getElementById('setDistrict');if(b)b.value=thana.district;}}catch(e){}
+  refreshVivechakSelects(); loadCustomPads(); populateDashboardFilters(); renderAll(); try{updatePassInfo();}catch(e){}
+  setTimeout(()=>{try{if(initFirebase(false)){const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● Firebase चालू';ss.className='text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full';}loadFromFirebase();loadVivechaksFromFirebase();const finfo=document.getElementById('finalSecureInfo');const ftime=localStorage.getItem(LS_FINAL);if(finfo&&ftime){finfo.textContent='✅ अंतिम बार सुरक्षित: '+new Date(ftime).toLocaleString();}}else{const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● लोकल मोड';ss.className='text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full';}}}catch(e){}},800);
+}
+function saveCases(){localStorage.setItem(LS_CASES,JSON.stringify(cases));try{if(document.getElementById('autoSync')?.checked)syncToCloud();}catch(e){}renderAll();}
+function saveVivechaks(){localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads();renderVivechakTable();renderDashboard();}
+function refreshVivechakSelects(){
+  const el1=document.getElementById('f_vivechak'); if(el1){ if(vivechaks.length>0) el1.innerHTML='<option value="">-- चुनें --</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.pad} ${v.naam}</option>`).join(''); else el1.innerHTML='<option value="">पहले विवेचक जोड़ें</option>'; }
+  const el2=
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+document.getElementById('filterVivechak'); if(el2){ if(vivechaks.length>0) el2.innerHTML='<option value="all">सभी विवेचक</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.naam}</option>`).join(''); else el2.innerHTML='<option value="all">कोई विवेचक नहीं</option>'; }
+  const el3=document.getElementById('loginVivechakSelect'); if(el3){ if(vivechaks.length>0) el3.innerHTML=vivechaks.map(v=>`<option value="${v.naam}">${v.pad} ${v.naam}</option>`).join(''); else el3.innerHTML='<option value="">पहले Admin से विवेचक जोड़ें</option>'; }
+}
+function renderAll(){renderStats();renderCasesTable();renderPending();renderVivechakTable();renderDashboard();updateBadge();renderInvestigatorWisePending();populateDashboardFilters();}
+function getCurrentUser(){try{return JSON.parse(localStorage.getItem(LS_AUTH)||'null');}catch(e){return null;}}
+function isAdmin(){const u=getCurrentUser();return u&&u.role==='admin';}
+function renderStats(){
+  const list=getDashboardFilteredCases();
+  const a=document.getElementById('statTotal');if(a)a.textContent=list.length;
+  const b=document.getElementById('statPending');if(b)b.textContent=list.filter(c=>c.aaropPatraStatus==='लंबित').length;
+  const c=document.getElementById('statChallan');if(c)c.textContent=list.filter(c=>c.aaropPatraStatus==='आरोप पत्र').length;
+  const d=document.getElementById('statFR');if(d)d.textContent=list.filter(c=>['अंतिम रिपोर्ट','खात्मा'].includes(c.aaropPatraStatus)).length;
+  const info=document.getElementById('dashboardFilterInfo'); if(info){ let t=''; if(dashboardYearFilter!=='all') t+=`वर्ष:${dashboardYearFilter} `; if(dashboardVivechakFilter!=='all') t+=`विवेचक:${dashboardVivechakFilter}`; if(!t) t=`कुल ${cases.length} में से ${list.length}`; else t=`फिल्टर:${t}|${list.length}`; info.textContent=t; }
+}
+
+
+function renderDashboard(){const summary=document.getElementById('vivechakSummary');const list=getDashboardFilteredCases();if(vivechaks.length===0){if(summary)summary.innerHTML='<p class="text-sm text-amber-600 p-3 bg-amber-50 rounded-xl">कोई विवेचक नहीं। Admin से जोड़ें।</p>';}else{const map={};vivechaks.forEach(v=>map[v.naam]={total:0,pending:0});list.forEach(c=>{if(!map[c.vivechak])map[c.vivechak]={total:0,pending:0};map[c.vivechak].total++;if(c.aaropPatraStatus==='लंबित')map[c.vivechak].pending++;});if(summary)summary.innerHTML=Object.entries(map).map(([name,val])=>`<div class="flex justify-between items-center border rounded-xl px-4 py-3"><div><p class="font-semibold text-sm">${name}</p><p class="text-[11px] text-slate-500">कुल ${val.total} | लंबित ${val.pending}</p></div><span class="bg-red-50 text-red-700 text-xs px-3 py-1 rounded-full">${val.pending} लंबित</span></div>`).join('')||'<p class="text-sm text-slate-500">कोई डेटा नहीं</p>';}const recent=document.getElementById('recentCases');if(recent){if(list.length===0)recent.innerHTML='<p class="text-xs text-slate-400">कोई केस नहीं</p>';else recent.innerHTML=list.slice(0,5).map(c=>`<div class="flex justify-between border-b pb-2"><div><p class="font-medium">${c.muAsNo} - ${c.dhara}</p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p></div><span class="text-[11px] ${c.aaropPatraStatus==='लंबित'?'text-red-600':'text-green-600'}">${c.aaropPatraStatus}</span></div>`).join('');}}
+function renderCasesTable(){
+  const q=(document.getElementById('caseSearch')?.value||'').toLowerCase();
+  const u=getCurrentUser();
+  let list=cases;
+  if(u&&u.role==='vivechak') list=list.filter(c=>c.vivechak===u.name);
+  if(q) list=list.filter(c=>(c.muAsNo+' '+c.dhara+' '+c.wadi+' '+c.banam+' '+c.vivechak).toLowerCase().includes(q));
+  // Sorting
+  list = list.slice().sort((a,b)=>{
+    let va, vb;
+    if(casesSortField==='muAsNo'){
+      va = String(a.muAsNo||'').toLowerCase();
+      vb = String(b.muAsNo||'').toLowerCase();
+      const pa = va.match(/(\d+)\/(\d+)/); const pb = vb.match(/(\d+)\/(\d+)/);
+      if(pa && pb){
+        const ya=parseInt(pa[2]), yb=parseInt(pb[2]);
+        if(ya!==yb) return casesSortOrder==='asc' ? ya-yb : yb-ya;
+        return casesSortOrder==='asc' ? parseInt(pa[1])-parseInt(pb[1]) : parseInt(pb[1])-parseInt(pa[1]);
+      }
+    } else if(casesSortField==='dinankSuchna'){
+      va = a.dinankSuchna||a.dinankGhatna||'';
+      vb = b.dinankSuchna||b.dinankGhatna||'';
+    } else {
+      va = String(a[casesSortField]||''); vb = String(b[casesSortField]||'');
+    }
+    if(va<vb) return casesSortOrder==='asc' ? -1 : 1;
+    if(va>vb) return casesSortOrder==='asc' ? 1 : -1;
+    return 0;
+  });
+  const muIcon=document.getElementById('sortMuIcon'); const dateIcon=document.getElementById('sortDateIcon');
+  if(muIcon) muIcon.textContent = casesSortField==='muAsNo' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕️';
+  if(dateIcon) dateIcon.textContent = casesSortField==='dinankSuchna' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕️';
+  const tb=document.getElementById('casesTbody'); if(!tb) return;
+  if(list.length===0){
+    tb.innerHTML=`<tr><td colspan="8" class="py-10 text-center text-slate-400">कोई डेटा नहीं।</td></tr>`; return;
+  }
+  tb.innerHTML=list.map((c,idx)=>`<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${c.muAsNo}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${c.muAsNo}')" class="text-red-600 text-xs">Del</button></td></tr>`).join('');
+}
+function renderPending(){const fv=
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+document.getElementById('filterVivechak')?.value||'all',fa=document.getElementById('filterAvadhi')?.value||'all',fb=document.getElementById('filterBase')?.value||'suchna',sort=document.getElementById('filterSort')?.value||'pending_desc',cf=document.getElementById('customFrom')?.value||'',ct=document.getElementById('customTo')?.value||'';let list=cases.filter(c=>c.aaropPatraStatus==='लंबित');const u=getCurrentUser();if(u&&u.role==='vivechak')list=list.filter(c=>c.vivechak===u.name);if(fv!=='all')list=list.filter(c=>c.vivechak===fv);const today=new Date();if(fa!=='all'&&fa!=='custom'){const days=parseInt(fa);const limit=new Date();if(fa==='today'){limit.setHours(0,0,0,0);}else{limit.setDate(today.getDate()-days);}list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});}if(fa==='custom'&&cf&&ct){const from=new Date(cf),to=new Date(ct);list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});}list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});const fi=document.getElementById('filterInfo');if(fi)fi.textContent=`कुल ${cases.filter(c=>c.aaropPatraStatus==='लंबित').length} में से ${list.length}`;const map={};cases.filter(c=>c.aaropPatraStatus==='लंबित').forEach(c=>{map[c.vivechak]=(map[c.vivechak]||0)+1;});const pvs=document.getElementById('pendingVivechakSummary');if(pvs)pvs.innerHTML=Object.entries(map).map(([n,cnt])=>`<button onclick="setVivechakFilter('${n}')" class="text-xs border px-3 py-1.5 rounded-full ${fv===n?'bg-blue-600 text-white':'bg-white'}">${n} <span class="ml-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">${cnt}</span></button>`).join('');const tbody=document.getElementById('pendingTbody');const empty=document.getElementById('pendingEmpty');if(!tbody)return;if(list.length===0){tbody.innerHTML='';if(empty)empty.classList.remove('hidden');}else{if(empty)empty.classList.add('hidden');tbody.innerHTML=list.map(c=>{const d=new Date(c.dinankSuchna||new Date());const days=Math.max(0,Math.floor((today-d)/86400000));return `<tr class="border-b"><td class="py-2 font-medium">${c.muAsNo}<div class="text-[11px] text-slate-500">${c.dhara}</div></td><td class="text-xs">${c.vivechak}</td><td class="text-xs"><div>${c.wadi}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam}</div></td><td class="text-xs">${c.dinankSuchna||''}</td><td><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">${days} दिन</span></td><td><button onclick="openNistaran('${c.muAsNo}')" class="bg-[#1e3a8a] text-white text-xs px-3 py-1.5 rounded-full">निस्तारण</button></td></tr>`;}).join('');}}
+function setVivechakFilter(name){const el=
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+document.getElementById('filterVivechak');if(el){el.value=name;renderPending();}}
+function clearFilters(){const a=
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+document.getElementById('filterVivechak');if(a)a.value='all';const b=document.getElementById('filterAvadhi');if(b)b.value='all';const c=document.getElementById('filterBase');if(c)c.value='suchna';const d=document.getElementById('filterSort');if(d)d.value='pending_desc';const e=document.getElementById('customFrom');if(e)e.value='';const f=document.getElementById('customTo');if(f)f.value='';const g=document.getElementById('customDateRow');if(g)g.classList.add('hidden');renderPending();}
+function updateBadge(){const el=document.getElementById('pendingBadge');if(el)el.textContent=cases.filter(c=>c.aaropPatraStatus==='लंबित').length;}
+document.getElementById('caseForm')?.addEventListener('submit',e=>{e.preventDefault();const mu=document.getElementById('f_mu').value.trim();if(!mu){alert('मु0अ0सं0');return;}if(vivechaks.length===0){alert('पहले विवेचक जोड़ें');goPage('vivechak');return;}const obj={muAsNo:mu,dhara:document.getElementById('f_dhara').value.trim(),dinankGhatna:document.getElementById('f_ghatnaDate').value,dinankSuchna:document.getElementById('f_suchnaDate').value,ghatnaSthal:document.getElementById('f_sthal').value.trim(),wadi:document.getElementById('f_wadi').value.trim(),banam:document.getElementById('f_banam').value.trim(),vivechak:document.getElementById('f_vivechak').value,vivaran:document.getElementById('f_vivaran').value.trim(),aaropPatraStatus:document.getElementById('f_status').value,aaropPatraDinank:document.getElementById('f_statusDate').value,updatedAt:Date.now()};if(editMu){const idx=cases.findIndex(c=>c.muAsNo===editMu);if(idx>=0)cases[idx]=obj;editMu=null;document.getElementById('formTitle').textContent='नया मुकदमा';}else{if(cases.some(c=>c.muAsNo===mu)){alert('पहले से है');return;}cases.unshift(obj);}saveCases();resetForm();alert('केस सेव। Final Submit से सुरक्षित करें।');goPage('cases');});
+function editCase(mu){const c=cases.find(x=>x.muAsNo===mu);if(!c)return;editMu=mu;document.getElementById('f_mu').value=c.muAsNo;document.getElementById('f_dhara').value=c.dhara;document.getElementById('f_ghatnaDate').value=c.dinankGhatna;document.getElementById('f_suchnaDate').value=c.dinankSuchna;document.getElementById('f_sthal').value=c.ghatnaSthal;document.getElementById('f_wadi').value=c.wadi;document.getElementById('f_banam').value=c.banam;document.getElementById('f_vivechak').value=c.vivechak;document.getElementById('f_vivaran').value=c.vivaran;document.getElementById('f_status').value=c.aaropPatraStatus;document.getElementById('f_statusDate').value=c.aaropPatraDinank;document.getElementById('formTitle').textContent='एडिट: '+mu;goPage('cases');window.scrollTo(0,0);}
+function delCase(mu){if(!confirm('हटाना है '+mu+'?'))return;cases=cases.filter(c=>c.muAsNo!==mu);saveCases();try{if(fbDb){const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;fbDb.collection(coll).doc(String(mu).replace(/\//g,'-')).delete();}}catch(e){}}
+function resetForm(){const f=document.getElementById('caseForm');if(f)f.reset();editMu=null;const t=document.getElementById('formTitle');if(t)t.textContent='नया मुकदमा जोड़ें - थाना एट';}
+document.getElementById('vivechakForm')?.addEventListener('submit',e=>{e.preventDefault();if(!isAdmin()&&getCurrentUser()){alert('केवल थानाध्यक्ष');return;}const obj={id:editVivechakId||'v'+Date.now(),naam:document.getElementById('v_name').value.trim(),pad:document.getElementById('v_pad').value,mobile:document.getElementById('v_mobile').value.trim(),badge:document.getElementById('v_badge').value.trim(),niyuktiDinank:document.getElementById('v_date').value};if(!obj.naam)return;if(editVivechakId){const idx=vivechaks.findIndex(v=>v.id===editVivechakId);if(idx>=0)vivechaks[idx]=obj;editVivechakId=null;document.getElementById('vivechakFormTitle').textContent='नया विवेचक';}else vivechaks.push(obj);saveVivechaks();resetVivechakForm();alert('विवेचक सेव। Final Submit करें।');});
+function renderVivechakTable(){const q=(document.getElementById('vivechakSearch')?.value||'').toLowerCase();let list=vivechaks;if(q)list=list.filter(v=>(v.naam+v.pad+v.mobile).toLowerCase().includes(q));const tb=document.getElementById('vivechakTbody');if(!tb)return;if(list.length===0){tb.innerHTML=`<tr><td colspan="5" class="py-8 text-center text-slate-400">कोई विवेचक नहीं। ऊपर फॉर्म से जोड़ें।</td></tr>`;return;}tb.innerHTML=list.map((v,i)=>{const total=cases.filter(c=>c.vivechak===v.naam).length;const pending=cases.filter(c=>c.vivechak===v.naam&&c.aaropPatraStatus==='लंबित').length;return `<tr class="border-b"><td class="py-2 px-2">${i+1}</td><td><div class="font-medium text-sm">${v.pad} ${v.naam}</div><div class="text-[11px] text-slate-500">${v.badge||''} ${v.niyuktiDinank||''}</div></td><td class="text-xs">${v.mobile||'-'}</td><td><span class="text-xs">${total}</span> / <span class="text-xs text-red-600 font-semibold">${pending}</span></td><td class="text-center"><button onclick="editVivechak('${v.id}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delVivechak('${v.id}')" class="text-red-600 text-xs">Del</button></td></tr>`;}).join('');}
+function editVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}const v=vivechaks.find(x=>x.id===id);if(!v)return;editVivechakId=id;document.getElementById('v_name').value=v.naam;document.getElementById('v_pad').value=v.pad;document.getElementById('v_mobile').value=v.mobile;document.getElementById('v_badge').value=v.badge;document.getElementById('v_date').value=v.niyuktiDinank;document.getElementById('vivechakFormTitle').textContent='एडिट: '+v.naam;}
+function delVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}if(!confirm('हटाना है?'))return;vivechaks=vivechaks.filter(v=>v.id!==id);saveVivechaks();try{if(fbDb){fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).doc(id).delete();}}catch(e){}}
+function resetVivechakForm(){const f=document.getElementById('vivechakForm');if(f)f.reset();editVivechakId=null;const t=document.getElementById('vivechakFormTitle');if(t)t.textContent='नया विवेचक जोड़ें';}
+function openNistaran(mu){nistaranMuNo=mu;const a=document.getElementById('nistaranMu');if(a)a.textContent='मु0अ0सं0: '+mu;const b=document.getElementById('nistaranDate');if(b)b.value=new Date().toISOString().slice(0,10);const m=document.getElementById('nistaranModal');if(m){m.classList.remove('hidden');m.classList.add('flex');}}
+function closeNistaran(){const m=document.getElementById('nistaranModal');if(m){m.classList.add('hidden');m.classList.remove('flex');}nistaranMuNo=null;}
+function saveNistaran(){if(!nistaranMuNo)return;const st=document.getElementById('nistaranStatus').value,dt=document.getElementById('nistaranDate').value;const idx=cases.findIndex(c=>c.muAsNo===nistaranMuNo);if(idx>=0){cases[idx].aaropPatraStatus=st;cases[idx].aaropPatraDinank=dt;cases[idx].updatedAt=Date.now();saveCases();}closeNistaran();}
+function goPage(p){document.querySelectorAll('.page').forEach(s=>s.classList.add('hidden'));const pg=document.getElementById('page-'+p);if(pg)pg.classList.remove('hidden');document.querySelectorAll('.navBtn').forEach(b=>{b.classList.remove('bg-blue-600','text-white');if(b.dataset.page===p)b.classList.add('bg-blue-600','text-white');});const mn=document.getElementById('mobNav');if(mn)mn.value=p;}
+document.querySelectorAll('.navBtn').forEach(b=>b.addEventListener('click',()=>goPage(b.dataset.page)));
+document.getElementById('mobNav')?.addEventListener('change',e=>goPage(e.target.value));
+document.getElementById('loginRole')?.addEventListener('change',e=>{const w=document.getElementById('vivechakLoginSelectWrap'),aw=document.getElementById('adminNameWrap');if(e.target.value==='vivechak'){if(w)w.classList.remove('hidden');if(aw)aw.classList.add('hidden');}else{if(w)w.classList.add('hidden');if(aw)aw.classList.remove('hidden');}});
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+
+
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
+
+document.getElementById('filterVivechak')?.addEventListener('change',renderPending);
+document.getElementById('filterAvadhi')?.addEventListener('change',e=>{const r=document.getElementById('customDateRow');if(!r)return;if(e.target.value==='custom')r.classList.remove('hidden');else r.classList.add('hidden');renderPending();});
+document.getElementById('filterBase')?.addEventListener('change',renderPending);
+document.getElementById('filterSort')?.addEventListener('change',renderPending);
+document.getElementById('customFrom')?.addEventListener('change',renderPending);
+document.getElementById('customTo')?.addEventListener('change',renderPending);
+document.getElementById('caseSearch')?.addEventListener('input',renderCasesTable);
+document.getElementById('vivechakSearch')?.addEventListener('input',renderVivechakTable);
+// Auth + Password Change
+function doLogin(){const role=document.getElementById('loginRole').value,pass=document.getElementById('loginPass').value.trim();let name='';if(role==='admin'){name=document.getElementById('loginName').value.trim()||'थानाध्यक्ष';if(pass!==getAdminPass()){const er=document.getElementById('loginErr');if(er){er.textContent='गलत पासवर्ड: '+getAdminPass();er.classList.remove('hidden');}return;}}else{name=document.getElementById('loginVivechakSelect').value;if(!name||name.includes('कोई विवेचक')||name.includes('Admin से')){alert('पहले Admin से विवेचक जोड़ें');return;}if(pass!==getVivechakPass()){const er=document.getElementById('loginErr');if(er){er.textContent='गलत: '+getVivechakPass();er.classList.remove('hidden');}return;}}localStorage.setItem(LS_AUTH,JSON.stringify({role,name}));document.getElementById('loginOverlay').classList.add('hidden');const su=document.getElementById('sideUser');if(su)su.textContent=name+' ('+(role==='admin'?'Admin':'विवेचक')+')';loadAll();}
+function updatePassInfo(){const ap=getAdminPass();const vp=getVivechakPass();const el1=document.getElementById('currentPassInfo');if(el1)el1.textContent='वर्तमान - थानाध्यक्ष: '+ap+' | विवेचक: '+vp;}
+function changeAdminPassword(){const cur=document.getElementById('curAdminPass').value.trim();const np=document.getElementById('newAdminPass').value.trim();const cp=document.getElementById('confirmAdminPass').value.trim();if(cur!==getAdminPass()){alert('वर्तमान थानाध्यक्ष पासवर्ड गलत');return;}if(np.length<4){alert('नया पासवर्ड कम से कम 4 अक्षर');return;}if(np!==cp){alert('कन्फर्म मेल नहीं');return;}localStorage.setItem(LS_ADMIN_PASS,np);const m=document.getElementById('adminPassMsg');if(m)m.textContent='बदल गया ✓ नया: '+np;document.getElementById('curAdminPass').value='';document.getElementById('newAdminPass').value='';document.getElementById('confirmAdminPass').value='';updatePassInfo();}
+function changeVivechakPassword(){const cur=document.getElementById('curVivechakPass').value.trim();const np=document.getElementById('newVivechakPass').value.trim();const cp=document.getElementById('confirmVivechakPass').value.trim();if(cur!==getVivechakPass()){alert('वर्तमान विवेचक पासवर्ड गलत');return;}if(np.length<4){alert('कम से कम 4 अक्षर');return;}if(np!==cp){alert('कन्फर्म मेल नहीं');return;}localStorage.setItem(LS_VIVECHAK_PASS,np);const m=document.getElementById('vivechakPassMsg');if(m)m.textContent='बदल गया ✓ नया: '+np;document.getElementById('curVivechakPass').value='';document.getElementById('newVivechakPass').value='';document.getElementById('confirmVivechakPass').value='';updatePassInfo();}
+function doLogout(){localStorage.removeItem(LS_AUTH);location.reload();}
+function saveThanaInfo(){const o={thanaName:document.getElementById('setThana').value,district:document.getElementById('setDistrict').value,state:'उत्तर प्रदेश'};localStorage.setItem(LS_THANA,JSON.stringify(o));alert('सेव');}
+function copyCode(){try{navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent);alert('कॉपी');}catch(e){}}
+function testCloud(){const url=document.getElementById('cloudUrl')?.value.trim();if(!url){alert('URL');return;}const msg=document.getElementById('cloudMsg');if(msg)msg.textContent='टेस्ट...';fetch(url).then(r=>r.json()).then(d=>{if(msg)msg.textContent='कनेक्टेड '+d.length;}).catch(e=>{if(msg)msg.textContent='एरर '+e.message;});}
+function syncNow(){const url=localStorage.getItem(LS_CLOUD);if(!url){alert('URL');return;}const msg=document.getElementById('cloudMsg');if(msg)msg.textContent='Sync...';fetch(url).then(r=>r.json()).then(remote=>{if(Array.isArray(remote)&&remote.length>0){const map={};cases.forEach(c=>map[c.muAsNo]=c);remote.forEach(rc=>{const ex=map[rc.muAsNo];if(!ex||(rc.updatedAt&&new Date(rc.updatedAt)>new Date(ex.updatedAt||0)))map[rc.muAsNo]=rc;});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));renderAll();}if(msg)msg.textContent='Sync पूरा';}).catch(e=>{if(msg)msg.textContent='फेल '+e.message;});}
+function syncToCloud(){const url=localStorage.getItem(LS_CLOUD);if(!url)return;const last=cases[0];if(!last)return;fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(last)}).then(()=>{}).catch(()=>{});}
+document.getElementById('cloudUrl')?.addEventListener('change',e=>{localStorage.setItem(LS_CLOUD,e.target.value.trim());});
+document.getElementById('autoSync')?.addEventListener('change',e=>{localStorage.setItem(LS_AUTO,e.target.checked);});
+function parseFirebaseConfig(text){text=text.trim();if(!text)throw new Error('Config खाली');try{return JSON.parse(text);}catch(e){}try{return (new Function('return ('+text+')'))();}catch(e){}try{let fixed=text.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g,'"$2":').replace(/'/g,'"');return JSON.parse(fixed);}catch(e){throw new Error('JSON गलत');}}
+function initFirebase(showMsg){try{let cfg;const inputEl=document.getElementById('fbConfig');const inputVal=inputEl?inputEl.value.trim():'';if(inputVal){cfg=parseFirebaseConfig(inputVal);}else{const stored=JSON.parse(localStorage.getItem(LS_FB)||'null');if(stored&&stored.config)cfg=stored.config;else if(typeof DEFAULT_FB_CONFIG!=='undefined'){cfg=DEFAULT_FB_CONFIG;try{localStorage.setItem(LS_FB,JSON.stringify({config:cfg,collection:DEFAULT_FB_COLLECTION,configString:JSON.stringify(cfg,null,2)}));}catch(e){}const ce=document.getElementById('fbCollection');if(ce&&!ce.value)ce.value=DEFAULT_FB_COLLECTION;}else throw new Error('Config नहीं');}const coll=document.getElementById('fbCollection')?.value||DEFAULT_FB_COLLECTION;if(!firebase.apps.length){fbApp=firebase.initializeApp(cfg);}else{fbApp=firebase.app();}fbDb=firebase.firestore();if(showMsg){const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs mt-2 p-2 rounded-lg bg-green-50 text-green-800 border';el.textContent='Firebase जुड़ गया! '+coll;}}return true;}catch(err){const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs mt-2 p-2 rounded-lg bg-red-50 text-red-800 border';el.textContent='Firebase एरर: '+err.message;}return false;}}
+function saveFirebase(){try{const cfgText=document.getElementById('fbConfig').value.trim();const cfg=parseFirebaseConfig(cfgText);const coll=document.getElementById('fbCollection').value||DEFAULT_FB_COLLECTION;const proper=JSON.stringify(cfg,null,2);localStorage.setItem(LS_FB,JSON.stringify({config:cfg,collection:coll,configString:proper}));document.getElementById('fbConfig').value=proper;if(initFirebase(true)){const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● Firebase चालू';ss.className='text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full';}}}catch(err){const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent=err.message;}}}
+function testFirebase(){if(initFirebase(true)){const coll=document.getElementById('fbCollection').value||DEFAULT_FB_COLLECTION;fbDb.collection(coll).limit(1).get().then(snap=>{const el=document.getElementById('fbMsg');if(el)el.textContent='टेस्ट सफल '+snap.size;}).catch(e=>{const el=document.getElementById('fbMsg');if(el){el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent='Rule एरर: '+e.message;}});}}
+function syncCaseToFirebase(c){try{if(!fbDb&&!initFirebase(false))return;const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;fbDb.collection(coll).doc(String(c.muAsNo).replace(/\//g,'-')).set(c,{merge:true});}catch(e){}}
+function syncAllToFirebase(){if(!initFirebase(false)){alert('Firebase नहीं');return false;}let i=0;function next(){if(i>=cases.length)return;syncCaseToFirebase(cases[i]);i++;setTimeout(next,120);}next();return true;}
+function syncVivechakToFirebase(v){try{if(!fbDb&&!initFirebase(false))return;fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).doc(v.id).set(v,{merge:true});}catch(e){}}
+function syncAllVivechaksToFirebase(){if(!initFirebase(false))return false;vivechaks.forEach(v=>syncVivechakToFirebase(v));return true;}
+function finalSecureSubmit(){
+  if(cases.length===0&&vivechaks.length===0){alert('पहले 1 विवेचक और 1 केस जोड़ें');return;}
+  if(!confirm('क्या आप '+cases.length+' केस और '+vivechaks.length+' विवेचक को FINAL SECURE करना चाहते हैं?\\nदोबारा खोलने पर यही डेटा दिखेगा।'))return;
+  const btn=document.getElementById('finalSubmitBtn');const info=document.getElementById('finalSecureInfo');const msg=document.getElementById('fbMsg');
+  if(btn){btn.textContent='⏳ सुरक्षित किया जा रहा है...';btn.disabled=true;}
+  if(!initFirebase(false)){alert('Firebase नहीं जुड़ा');if(btn){btn.disabled=false;btn.textContent='✅ Final Submit';}return;}
+  syncAllToFirebase();syncAllVivechaksToFirebase();
+  setTimeout(()=>{const now=new Date().toISOString();localStorage.setItem(LS_FINAL,now);if(btn){btn.textContent='✅ सुरक्षित हो गया!';btn.className='mt-3 w-full bg-green-500 text-white py-3 rounded-xl font-bold';btn.disabled=false;}if(info){info.textContent='✅ अंतिम बार: '+new Date(now).toLocaleString();}if(msg){msg.classList.remove('hidden');msg.className='text-sm mt-3 p-3 rounded-xl bg-green-50 text-green-800 border-2 border-green-300 font-semibold';msg.innerHTML='🔒 <b>डेटा सुरक्षित!</b> '+cases.length+' केस, '+vivechaks.length+' विवेचक सेव।';}const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+cases.length+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}alert('✅ सुरक्षित! अब दोबारा खोलने पर यही दिखेगा।');},1500);
+}
+function loadFromFirebase(){if(!initFirebase(false))return;const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;try{if(window._fbUnsub)window._fbUnsub();}catch(e){}window._fbUnsub=fbDb.collection(coll).onSnapshot(snap=>{if(snap.empty){if(cases.length===0)renderAll();return;}const map={};snap.forEach(doc=>{const d=doc.data();if(d&&d.muAsNo)map[d.muAsNo]=d;});try{const local=JSON.parse(localStorage.getItem(LS_CASES)||'[]');local.forEach(c=>{if(c&&c.muAsNo&&(!map[c.muAsNo]||(c.updatedAt||0)>(map[c.muAsNo].updatedAt||0)))map[c.muAsNo]=c;});}catch(e){}cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));renderAll();const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+snap.size+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}},err=>{const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent='एरर: '+err.message;}});}
+function loadVivechaksFromFirebase(){if(!initFirebase(false))return;try{if(window._fbVUnsub)window._fbVUnsub();}catch(e){}window._fbVUnsub=fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).onSnapshot(snap=>{if(snap.empty){return;}const list=[];snap.forEach(doc=>{const d=doc.data();if(d&&d.id&&d.naam)list.push(d);});if(list.length>0){vivechaks=list;localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads();renderVivechakTable();renderDashboard();}});}
+
+// ===== EXCEL / CSV IMPORT =====
+function downloadImportTemplate(){
+  const headers=["मु0अ0सं0","धारा","दिनांक घटना","दिनांक सूचना","घटना स्थल","वादी","बनाम","विवेचक","विवरण","स्थिति","दिनांक"];
+  const sample=[["045/2024","103(1) BNS","2024-05-10","2024-05-11","ग्राम एट","रामकुमार","अज्ञात","SI रामप्रकाश यादव","जमीनी विवाद","लंबित",""],["102/2024","85 BNS","2024-06-01","2024-06-02","कस्बा एट","सीमा देवी","सुनील","SI सुनील कुमार","दहेज","आरोप पत्र","2024-07-15"]];
+  let csv=headers.join(",")+"\n"+sample.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ait_Import_Template.csv';a.click();
+}
+function handleImportFile(){
+  const input=document.getElementById('importFileInput');const file=input?.files?.[0];if(!file){alert('फाइल चुनें');return;}
+  const msg=document.getElementById('importMsg');if(msg)msg.textContent='⏳ पढ़ा जा रहा है...';
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='csv'){
+    const r=new FileReader();r.onload=e=>{try{const rows=parseCSV(e.target.result);processImportRows(rows);}catch(err){if(msg)msg.textContent='CSV एरर: '+err.message;}};r.readAsText(file,'utf-8');
+  } else if(ext==='xlsx'||ext==='xls'){
+    const r=new FileReader();r.onload=e=>{
+      try{
+        const data=new Uint8Array(e.target.result);
+        const wb=XLSX.read(data,{type:'array', cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:'', raw:true});
+        processImportRows(json);
+      }catch(err){ if(msg)msg.textContent='Excel एरर: '+err.message; console.error(err); }
+    };r.readAsArrayBuffer(file);
+  } else alert('सिर्फ csv,xlsx,xls');
+}
+function parseCSV(text){const lines=text.split(/\r?\n/).filter(l=>l.trim()!=='');const parseLine=(line)=>{const res=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(ch===','&&!inQ){res.push(cur.trim());cur='';}else cur+=ch;}res.push(cur.trim());return res;};return lines.map(parseLine);}
+function normalizeHeader(h){h=String(h).trim().toLowerCase().replace(/\s+/g,'');const map={'मु0अ0सं0':'muAsNo','मुअ0सं0':'muAsNo','muasno':'muAsNo','firno':'muAsNo','धारा':'dhara','dhara':'dhara','दिनांकघटना':'dinankGhatna','dinankghatna':'dinankGhatna','दिनांकसूचना':'dinankSuchna','dinanksuchna':'dinankSuchna','घटनास्थल':'ghatnaSthal','ghatnasthal':'ghatnaSthal','वादी':'wadi','wadi':'wadi','बनाम':'banam','banam':'banam','विवेचक':'vivechak','vivechak':'vivechak','विवरण':'vivaran','vivaran':'vivaran','स्थिति':'aaropPatraStatus','status':'aaropPatraStatus','दिनांक':'aaropPatraDinank','aaroppatradinank':'aaropPatraDinank'};return map[h]||h;}
+function processImportRows(rows){
+  const msg=document.getElementById('importMsg');const pv=document.getElementById('importPreview');
+  if(!rows||rows.length<2){if(msg)msg.textContent='फाइल खाली';return;}
+  const hs=rows[0].map(h=>{ try{ return normalizeHeader(h); } catch(e){ return String(h).trim().toLowerCase(); } });
+  const idx={};hs.forEach((h,i)=>idx[h]=i);
+  if(idx['muAsNo']===undefined){if(msg)msg.textContent='❌ मु0अ0सं0 कॉलम नहीं मिला';return;}
+  let add=0,upd=0;
+  const mp={};cases.forEach(c=>mp[c.muAsNo]=c);
+  const vset=new Set(vivechaks.map(v=>v.naam));
+  const toAdd=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r]; if(!row)continue;
+    const getRaw=(k)=>{ const i=idx[k]; return i!==undefined ? row[i] : ''; };
+    const getVal=(k,d='')=>{ const v=getRaw(k); return (v===undefined||v===null||v==='')?d:String(v).trim(); };
+    const getDate=(k)=>{ const v=getRaw(k); return parseDateValue(v); };
+    const mu=String(getRaw('muAsNo')||'').trim(); if(!mu)continue;
+    const o={
+      muAsNo:mu,
+      dhara:getVal('dhara',''),
+      dinankGhatna:getDate('dinankGhatna')||getDate('ghatna')||'',
+      dinankSuchna:getDate('dinankSuchna')||getDate('suchna')||'',
+      ghatnaSthal:getVal('ghatnaSthal','')||getVal('sthal',''),
+      wadi:getVal('wadi',''),
+      banam:getVal('banam',''),
+      vivechak:getVal('vivechak',''),
+      vivaran:getVal('vivaran',''),
+      aaropPatraStatus:getVal('aaropPatraStatus','लंबित')||getVal('sthiti','लंबित')||'लंबित',
+      aaropPatraDinank:getDate('aaropPatraDinank')||getDate('dinank')||'',
+      updatedAt:Date.now()+r
+    };
+    if(!['लंबित','आरोप पत्र','अंतिम रिपोर्ट','खात्मा'].includes(o.aaropPatraStatus)){
+      const s=o.aaropPatraStatus.toLowerCase();
+      if(s.includes('पत्र')||s.includes('charge')) o.aaropPatraStatus='आरोप पत्र';
+      else if(s.includes('अंतिम')||s.includes('fr')||s.includes('final')) o.aaropPatraStatus='अंतिम रिपोर्ट';
+      else if(s.includes('खात्मा')) o.aaropPatraStatus='खात्मा';
+      else o.aaropPatraStatus='लंबित';
+    }
+    if(mp[mu]){mp[mu]={...mp[mu],...o};upd++;}else{mp[mu]=o;add++;}
+    if(o.vivechak&&!vset.has(o.vivechak)){vset.add(o.vivechak);toAdd.push({id:'v'+Date.now()+r,naam:o.vivechak,pad:'SI',mobile:'',badge:'',niyuktiDinank:''});}
+  }
+  cases=Object.values(mp);
+  if(toAdd.length>0){vivechaks=[...vivechaks,...toAdd];localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}
+  localStorage.setItem(LS_CASES,JSON.stringify(cases));
+  refreshVivechakSelects(); loadCustomPads();renderAll();
+  if(msg)msg.textContent=`✅ ${add} नए, ${upd} अपडेट, ${toAdd.length} विवेचक | 46068 जैसे दिनांक सही बदले गए`;
+  if(pv){pv.classList.remove('hidden');pv.innerHTML=`<b>प्रीव्यू:</b><br>`+cases.slice(-5).map(c=>`${c.muAsNo} | ${formatDateForExport(c.dinankSuchna)}`).join('<br>');}
+  alert(`इम्पोर्ट सफल! ${add} नए, ${upd} अपडेट\n46068 जैसे Excel नंबर अब DD/MM/YYYY में बदल गए`);
+}
+
+function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
+function exportCSV(){
+  let csv='मु0अ0सं0,धारा,घटना,सूचना,स्थल,वादी,बनाम,विवेचक,विवरण,स्थिति,दिनांक\n';
+  cases.forEach(c=>{
+    const muText = "'"+String(c.muAsNo).replace(/"/g,'""');
+    const ghatna = formatDateForExport(c.dinankGhatna);
+    const suchna = formatDateForExport(c.dinankSuchna);
+    const aarop = formatDateForExport(c.aaropPatraDinank);
+    const row = [muText,(c.dhara||'').replace(/"/g,'""'),ghatna,suchna,(c.ghatnaSthal||'').replace(/"/g,'""'),(c.wadi||'').replace(/"/g,'""'),(c.banam||'').replace(/"/g,'""'),(c.vivechak||'').replace(/"/g,'""'),(c.vivaran||'').replace(/"/g,'""'),c.aaropPatraStatus||'',aarop].map(v=>`"${v}"`).join(',');
+    csv+=row+'\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Ait_Cases_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+function exportExcel(){
+  const headers=["मु0अ0सं0","धारा","घटना","सूचना","स्थल","वादी","बनाम","विवेचक","विवरण","स्थिति","दिनांक"];
+  const data=[headers];
+  cases.forEach(c=>{
+    data.push([{v:c.muAsNo, t:'s'}, c.dhara||'', formatDateForExport(c.dinankGhatna), formatDateForExport(c.dinankSuchna), c.ghatnaSthal||'', c.wadi||'', c.banam||'', c.vivechak||'', c.vivaran||'', c.aaropPatraStatus||'', formatDateForExport(c.aaropPatraDinank)]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:12},{wch:15},{wch:12},{wch:12},{wch:22},{wch:28},{wch:22},{wch:18},{wch:35},{wch:12},{wch:12}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Cases");
+  XLSX.writeFile(wb, 'Ait_Cases_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+function exportJSON(){const blob=new Blob([JSON.stringify({thana:'थाना एट',vivechaks,cases,secureAt:localStorage.getItem(LS_FINAL)},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ait_Secure_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
+(function(){const auth=localStorage.getItem(LS_AUTH);if(auth){try{document.getElementById('loginOverlay').classList.add('hidden');const u=JSON.parse(auth);const su=document.getElementById('sideUser');if(su)su.textContent=u.name+' ('+(u.role==='admin'?'Admin':'विवेचक')+')';}catch(e){}loadAll();}else{let v=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');if(!v)v=[];vivechaks=v;refreshVivechakSelects(); loadCustomPads();}try{updatePassInfo();}catch(e){}})();
+
+
+</script>
+
+<!-- INVESTIGATOR DETAIL MODAL -->
+<div id="investigatorDetailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
+    <div class="p-4 border-b flex justify-between items-center bg-blue-50 rounded-t-2xl">
+      <div><h3 id="investigatorModalTitle" class="font-bold text-[#1e3a8a]">विवेचक - लम्बित विवरण</h3><p id="investigatorModalSub" class="text-xs text-slate-500 mt-0.5"></p></div>
+      <button onclick="closeInvestigatorDetail()" class="w-8 h-8 rounded-full bg-white border flex items-center justify-center hover:bg-slate-100">✕</button>
+    </div>
+    <div class="flex-1 overflow-auto p-3">
+      <table class="w-full text-sm">
+        <thead class="text-xs text-slate-500 border-b sticky top-0 bg-white"><tr><th class="text-left py-2 px-2">मु0अ0सं0 / धारा</th><th class="text-left">वादी / बनाम</th><th class="text-left">सूचना / घटना</th><th class="text-center">लंबित दिन</th><th class="text-center">Action</th></tr></thead>
+        <tbody id="investigatorDetailTbody"></tbody>
+      </table>
+    </div>
+    <div class="p-3 border-t flex justify-between items-center bg-slate-50 rounded-b-2xl">
+      <span id="investigatorModalCount" class="text-xs text-slate-600"></span>
+      <div class="flex gap-2"><button onclick="exportInvestigatorPending()" class="border bg-white px-4 py-2 rounded-xl text-sm">CSV डाउनलोड</button><button onclick="closeInvestigatorDetail()" class="bg-[#1e3a8a] text-white px-5 py-2 rounded-xl text-sm">बंद करें</button></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
