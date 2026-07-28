@@ -127,6 +127,11 @@
           <div><label class="text-xs font-semibold">वादी मुकदमा *</label><input id="f_wadi" required class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
           <div><label class="text-xs font-semibold">बनाम (अभियुक्त)</label><input id="f_banam" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
           <div class="md:col-span-2"><label class="text-xs font-semibold">घटना का संक्षिप्त विवरण</label><textarea id="f_vivaran" rows="3" class="w-full border rounded-lg px-3 py-2.5 mt-1"></textarea></div>
+          <div class="md:col-span-2 bg-blue-50/50 border border-dashed border-blue-200 rounded-xl p-3">
+            <label class="text-xs font-semibold text-[#1e3a8a]">📄 FIR की PDF अपलोड (वैकल्पिक)</label>
+            <input id="f_firPdf" type="file" accept="application/pdf" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
+            <p id="firPdfName" class="text-[11px] text-slate-600 mt-1"></p>
+          </div>
           <div><label class="text-xs font-semibold">आरोप पत्र / अंतिम रिपोर्ट</label><select id="f_status" class="w-full border rounded-lg px-3 py-2.5 mt-1"><option>लंबित</option><option>आरोप पत्र</option><option>अंतिम रिपोर्ट</option><option>खात्मा</option></select></div>
           <div><label class="text-xs font-semibold">आरोप पत्र / FR दिनांक</label><input id="f_statusDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1"></div>
           <div class="md:col-span-2 flex gap-2"><button type="submit" class="bg-[#1e3a8a] text-white px-6 py-2.5 rounded-xl font-semibold">सेव करें</button><button type="button" onclick="resetForm()" class="border px-6 py-2.5 rounded-xl">रद्द करें</button><span id="formMsg" class="text-sm ml-3 self-center text-green-700"></span></div>
@@ -154,7 +159,9 @@
               <th class="text-left">धारा</th>
               <th class="text-left">वादी / बनाम</th>
               <th class="text-left">विवेचक</th>
-              <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('dinankSuchna')">दिनांक सूचना <span id="sortDateIcon">↕️</span></th>
+              <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('dinankSuchna')">सूचना दिनांक <span id="sortDateIcon">↕️</span></th>
+              <th class="text-left">आरोप पत्र/FR दिनांक</th>
+              <th class="text-left">PDF</th>
               <th class="text-left">स्थिति</th>
               <th>Action</th>
             </tr>
@@ -316,7 +323,7 @@ function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var s=ss.getShee
 </div>
 
 <!-- Nistaran Modal -->
-<div id="nistaranModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-40 p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-sm"><h3 class="font-semibold mb-3">निस्तारण करें</h3><p id="nistaranMu" class="text-sm text-slate-600 mb-3"></p><label class="text-xs font-semibold">स्थिति चुनें</label><select id="nistaranStatus" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-3"><option>आरोप पत्र</option><option>अंतिम रिपोर्ट</option><option>खात्मा</option></select><label class="text-xs font-semibold">दिनांक</label><input id="nistaranDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-4"><div class="flex gap-2"><button onclick="saveNistaran()" class="bg-[#1e3a8a] text-white px-5 py-2 rounded-xl text-sm">सेव</button><button onclick="closeNistaran()" class="border px-5 py-2 rounded-xl text-sm">रद्द</button></div></div></div>
+<div id="nistaranModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-40 p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-auto"><h3 class="font-semibold mb-3">निस्तारण करें - आरोप पत्र / अंतिम रिपोर्ट</h3><p id="nistaranMu" class="text-sm text-slate-600 mb-3"></p><label class="text-xs font-semibold">स्थिति चुनें</label><select id="nistaranStatus" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-3"><option>आरोप पत्र</option><option>अंतिम रिपोर्ट</option><option>खात्मा</option></select><label class="text-xs font-semibold">दिनांक</label><input id="nistaranDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-3"><div class="bg-green-50/50 border border-dashed border-green-200 rounded-xl p-3 mb-4"><label class="text-xs font-semibold text-green-800">📄 आरोप पत्र / अंतिम रिपोर्ट PDF अपलोड</label><input id="f_chargePdf" type="file" accept="application/pdf" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm"><p id="chargePdfName" class="text-[11px] text-slate-600 mt-1"></p></div><div class="flex gap-2"><button onclick="saveNistaran()" class="bg-[#1e3a8a] text-white px-5 py-2 rounded-xl text-sm">सेव</button><button onclick="closeNistaran()" class="border px-5 py-2 rounded-xl text-sm">रद्द</button></div></div></div>
 
 <script>
 
@@ -468,6 +475,45 @@ function getAvailableYears(){
 }
 
 
+
+function setupPdfInputs(){
+  document.getElementById('f_firPdf')?.addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return;
+    if(file.type!=='application/pdf'){ alert('सिर्फ PDF'); return; }
+    if(file.size>5*1024*1024){ alert('PDF 5MB से कम रखें'); return; }
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      tempFirPdfData=ev.target.result;
+      tempFirPdfName=file.name;
+      const el=document.getElementById('firPdfName'); if(el) el.textContent='✅ '+file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('f_chargePdf')?.addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return;
+    if(file.type!=='application/pdf'){ alert('सिर्फ PDF'); return; }
+    if(file.size>5*1024*1024){ alert('PDF 5MB से कम रखें'); return; }
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      tempChargePdfData=ev.target.result;
+      tempChargePdfName=file.name;
+      const el=document.getElementById('chargePdfName'); if(el) el.textContent='✅ '+file.name;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function viewPdf(dataUrl, name){
+  if(!dataUrl){ alert('PDF नहीं है'); return; }
+  const w=window.open(); w.document.write(`<html><head><title>${name}</title></head><body style="margin:0"><iframe src="${dataUrl}" style="width:100%;height:100vh;border:0"></iframe></body></html>`);
+}
+function clearPdfInputs(){
+  tempFirPdfData=null; tempFirPdfName=''; tempChargePdfData=null; tempChargePdfName='';
+  const f1=document.getElementById('f_firPdf'); if(f1) f1.value='';
+  const f2=document.getElementById('f_chargePdf'); if(f2) f2.value='';
+  const n1=document.getElementById('firPdfName'); if(n1) n1.textContent='';
+  const n2=document.getElementById('chargePdfName'); if(n2) n2.textContent='';
+}
+
 function populateDashboardFilters(){
   const ys=document.getElementById('dashboardYearFilter');
   const vs=document.getElementById('dashboardVivechakFilter');
@@ -576,11 +622,11 @@ function loadAll(){
     else{const el=document.getElementById('fbConfig');if(el&&!el.value)el.value=JSON.stringify(DEFAULT_FB_CONFIG,null,2);const el2=document.getElementById('fbCollection');if(el2&&!el2.value)el2.value=DEFAULT_FB_COLLECTION;}
   }catch(e){}
   try{const thana=JSON.parse(localStorage.getItem(LS_THANA)||'null');if(thana){const a=document.getElementById('setThana');if(a)a.value=thana.thanaName;const b=document.getElementById('setDistrict');if(b)b.value=thana.district;}}catch(e){}
-  refreshVivechakSelects(); loadCustomPads(); populateDashboardFilters(); renderAll(); try{updatePassInfo();}catch(e){}
+  refreshVivechakSelects(); loadCustomPads(); setupPdfInputs(); populateDashboardFilters(); renderAll(); try{updatePassInfo();}catch(e){}
   setTimeout(()=>{try{if(initFirebase(false)){const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● Firebase चालू';ss.className='text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full';}loadFromFirebase();loadVivechaksFromFirebase();const finfo=document.getElementById('finalSecureInfo');const ftime=localStorage.getItem(LS_FINAL);if(finfo&&ftime){finfo.textContent='✅ अंतिम बार सुरक्षित: '+new Date(ftime).toLocaleString();}}else{const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● लोकल मोड';ss.className='text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full';}}}catch(e){}},800);
 }
 function saveCases(){localStorage.setItem(LS_CASES,JSON.stringify(cases));try{if(document.getElementById('autoSync')?.checked)syncToCloud();}catch(e){}renderAll();}
-function saveVivechaks(){localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads();renderVivechakTable();renderDashboard();}
+function saveVivechaks(){localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}
 function refreshVivechakSelects(){
   const el1=document.getElementById('f_vivechak'); if(el1){ if(vivechaks.length>0) el1.innerHTML='<option value="">-- चुनें --</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.pad} ${v.naam}</option>`).join(''); else el1.innerHTML='<option value="">पहले विवेचक जोड़ें</option>'; }
   const el2=
@@ -630,7 +676,6 @@ function renderCasesTable(){
   let list=cases;
   if(u&&u.role==='vivechak') list=list.filter(c=>c.vivechak===u.name);
   if(q) list=list.filter(c=>(c.muAsNo+' '+c.dhara+' '+c.wadi+' '+c.banam+' '+c.vivechak).toLowerCase().includes(q));
-  // Sorting
   list = list.slice().sort((a,b)=>{
     let va, vb;
     if(casesSortField==='muAsNo'){
@@ -657,9 +702,14 @@ function renderCasesTable(){
   if(dateIcon) dateIcon.textContent = casesSortField==='dinankSuchna' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕️';
   const tb=document.getElementById('casesTbody'); if(!tb) return;
   if(list.length===0){
-    tb.innerHTML=`<tr><td colspan="8" class="py-10 text-center text-slate-400">कोई डेटा नहीं।</td></tr>`; return;
+    tb.innerHTML=`<tr><td colspan="10" class="py-10 text-center text-slate-400">कोई डेटा नहीं।</td></tr>`; return;
   }
-  tb.innerHTML=list.map((c,idx)=>`<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${c.muAsNo}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${c.muAsNo}')" class="text-red-600 text-xs">Del</button></td></tr>`).join('');
+  tb.innerHTML=list.map((c,idx)=>{
+    const hasFir = c.firPdfData ? `<button onclick="viewPdf(cases.find(x=>x.muAsNo==='${c.muAsNo}').firPdfData, '${(c.firPdfName||'FIR').replace(/'/g,"\\'")}')" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mr-1">FIR</button>` : '';
+    const hasCharge = c.chargeSheetPdfData ? `<button onclick="viewPdf(cases.find(x=>x.muAsNo==='${c.muAsNo}').chargeSheetPdfData, '${(c.chargeSheetPdfName||'Charge').replace(/'/g,"\\'")}')" class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">CS</button>` : '';
+    const pdfCell = (hasFir||hasCharge) ? hasFir+hasCharge : '<span class="text-[10px] text-slate-400">-</span>';
+    return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td class="text-xs">${c.aaropPatraDinank?formatDateForExport(c.aaropPatraDinank):''}</td><td class="text-center">${pdfCell}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${c.muAsNo}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${c.muAsNo}')" class="text-red-600 text-xs">Del</button></td></tr>`;
+  }).join('');
 }
 function renderPending(){const fv=
 
@@ -737,18 +787,113 @@ document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e
 
 document.getElementById('filterVivechak');if(a)a.value='all';const b=document.getElementById('filterAvadhi');if(b)b.value='all';const c=document.getElementById('filterBase');if(c)c.value='suchna';const d=document.getElementById('filterSort');if(d)d.value='pending_desc';const e=document.getElementById('customFrom');if(e)e.value='';const f=document.getElementById('customTo');if(f)f.value='';const g=document.getElementById('customDateRow');if(g)g.classList.add('hidden');renderPending();}
 function updateBadge(){const el=document.getElementById('pendingBadge');if(el)el.textContent=cases.filter(c=>c.aaropPatraStatus==='लंबित').length;}
-document.getElementById('caseForm')?.addEventListener('submit',e=>{e.preventDefault();const mu=document.getElementById('f_mu').value.trim();if(!mu){alert('मु0अ0सं0');return;}if(vivechaks.length===0){alert('पहले विवेचक जोड़ें');goPage('vivechak');return;}const obj={muAsNo:mu,dhara:document.getElementById('f_dhara').value.trim(),dinankGhatna:document.getElementById('f_ghatnaDate').value,dinankSuchna:document.getElementById('f_suchnaDate').value,ghatnaSthal:document.getElementById('f_sthal').value.trim(),wadi:document.getElementById('f_wadi').value.trim(),banam:document.getElementById('f_banam').value.trim(),vivechak:document.getElementById('f_vivechak').value,vivaran:document.getElementById('f_vivaran').value.trim(),aaropPatraStatus:document.getElementById('f_status').value,aaropPatraDinank:document.getElementById('f_statusDate').value,updatedAt:Date.now()};if(editMu){const idx=cases.findIndex(c=>c.muAsNo===editMu);if(idx>=0)cases[idx]=obj;editMu=null;document.getElementById('formTitle').textContent='नया मुकदमा';}else{if(cases.some(c=>c.muAsNo===mu)){alert('पहले से है');return;}cases.unshift(obj);}saveCases();resetForm();alert('केस सेव। Final Submit से सुरक्षित करें।');goPage('cases');});
-function editCase(mu){const c=cases.find(x=>x.muAsNo===mu);if(!c)return;editMu=mu;document.getElementById('f_mu').value=c.muAsNo;document.getElementById('f_dhara').value=c.dhara;document.getElementById('f_ghatnaDate').value=c.dinankGhatna;document.getElementById('f_suchnaDate').value=c.dinankSuchna;document.getElementById('f_sthal').value=c.ghatnaSthal;document.getElementById('f_wadi').value=c.wadi;document.getElementById('f_banam').value=c.banam;document.getElementById('f_vivechak').value=c.vivechak;document.getElementById('f_vivaran').value=c.vivaran;document.getElementById('f_status').value=c.aaropPatraStatus;document.getElementById('f_statusDate').value=c.aaropPatraDinank;document.getElementById('formTitle').textContent='एडिट: '+mu;goPage('cases');window.scrollTo(0,0);}
+document.getElementById('caseForm')?.addEventListener('submit',e=>{
+  e.preventDefault();
+  const mu=document.getElementById('f_mu').value.trim();
+  if(!mu){alert('मु0अ0सं0');return;}
+  if(vivechaks.length===0){alert('पहले विवेचक जोड़ें');goPage('vivechak');return;}
+  let firData=tempFirPdfData, firName=tempFirPdfName;
+  let chargeData=tempChargePdfData, chargeName=tempChargePdfName;
+  if(editMu){
+    const old=cases.find(c=>c.muAsNo===editMu);
+    if(old){
+      if(!firData && old.firPdfData){ firData=old.firPdfData; firName=old.firPdfName; }
+      if(!chargeData && old.chargeSheetPdfData){ chargeData=old.chargeSheetPdfData; chargeName=old.chargeSheetPdfName; }
+    }
+  }
+  const obj={
+    muAsNo:mu,
+    dhara:document.getElementById('f_dhara').value.trim(),
+    dinankGhatna:document.getElementById('f_ghatnaDate').value,
+    dinankSuchna:document.getElementById('f_suchnaDate').value,
+    ghatnaSthal:document.getElementById('f_sthal').value.trim(),
+    wadi:document.getElementById('f_wadi').value.trim(),
+    banam:document.getElementById('f_banam').value.trim(),
+    vivechak:document.getElementById('f_vivechak').value,
+    vivaran:document.getElementById('f_vivaran').value.trim(),
+    aaropPatraStatus:document.getElementById('f_status').value,
+    aaropPatraDinank:document.getElementById('f_statusDate').value,
+    firPdfData:firData||null,
+    firPdfName:firName||'',
+    chargeSheetPdfData:chargeData||null,
+    chargeSheetPdfName:chargeName||'',
+    updatedAt:Date.now()
+  };
+  if(editMu){
+    const idx=cases.findIndex(c=>c.muAsNo===editMu);
+    if(idx>=0)cases[idx]=obj;
+    editMu=null;
+    document.getElementById('formTitle').textContent='नया मुकदमा';
+  } else {
+    if(cases.some(c=>c.muAsNo===mu)){alert('पहले से है');return;}
+    cases.unshift(obj);
+  }
+  saveCases();
+  resetForm();
+  clearPdfInputs();
+  alert('केस सेव। PDF भी सेव। Final Submit से सुरक्षित करें।');
+  goPage('cases');
+});
+function editCase(mu){
+  const c=cases.find(x=>x.muAsNo===mu); if(!c) return;
+  editMu=mu;
+  document.getElementById('f_mu').value=c.muAsNo;
+  document.getElementById('f_dhara').value=c.dhara||'';
+  document.getElementById('f_ghatnaDate').value=c.dinankGhatna||'';
+  document.getElementById('f_suchnaDate').value=c.dinankSuchna||'';
+  document.getElementById('f_sthal').value=c.ghatnaSthal||'';
+  document.getElementById('f_wadi').value=c.wadi||'';
+  document.getElementById('f_banam').value=c.banam||'';
+  document.getElementById('f_vivechak').value=c.vivechak||'';
+  document.getElementById('f_vivaran').value=c.vivaran||'';
+  document.getElementById('f_status').value=c.aaropPatraStatus||'लंबित';
+  document.getElementById('f_statusDate').value=c.aaropPatraDinank||'';
+  tempFirPdfData=c.firPdfData||null; tempFirPdfName=c.firPdfName||'';
+  tempChargePdfData=c.chargeSheetPdfData||null; tempChargePdfName=c.chargeSheetPdfName||'';
+  const fn1=document.getElementById('firPdfName'); if(fn1) fn1.textContent=c.firPdfName ? '📄 मौजूद: '+c.firPdfName : '';
+  const fn2=document.getElementById('chargePdfName'); if(fn2) fn2.textContent=c.chargeSheetPdfName ? '📄 मौजूद: '+c.chargeSheetPdfName : '';
+  document.getElementById('formTitle').textContent='एडिट: '+mu;
+  goPage('cases');
+  window.scrollTo(0,0);
+}
 function delCase(mu){if(!confirm('हटाना है '+mu+'?'))return;cases=cases.filter(c=>c.muAsNo!==mu);saveCases();try{if(fbDb){const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;fbDb.collection(coll).doc(String(mu).replace(/\//g,'-')).delete();}}catch(e){}}
-function resetForm(){const f=document.getElementById('caseForm');if(f)f.reset();editMu=null;const t=document.getElementById('formTitle');if(t)t.textContent='नया मुकदमा जोड़ें - थाना एट';}
+function resetForm(){
+  document.getElementById('caseForm')?.reset();
+  editMu=null;
+  document.getElementById('formTitle').textContent='नया मुकदमा जोड़ें - थाना एट';
+  clearPdfInputs();
+}
 document.getElementById('vivechakForm')?.addEventListener('submit',e=>{e.preventDefault();if(!isAdmin()&&getCurrentUser()){alert('केवल थानाध्यक्ष');return;}const obj={id:editVivechakId||'v'+Date.now(),naam:document.getElementById('v_name').value.trim(),pad:document.getElementById('v_pad').value,mobile:document.getElementById('v_mobile').value.trim(),badge:document.getElementById('v_badge').value.trim(),niyuktiDinank:document.getElementById('v_date').value};if(!obj.naam)return;if(editVivechakId){const idx=vivechaks.findIndex(v=>v.id===editVivechakId);if(idx>=0)vivechaks[idx]=obj;editVivechakId=null;document.getElementById('vivechakFormTitle').textContent='नया विवेचक';}else vivechaks.push(obj);saveVivechaks();resetVivechakForm();alert('विवेचक सेव। Final Submit करें।');});
 function renderVivechakTable(){const q=(document.getElementById('vivechakSearch')?.value||'').toLowerCase();let list=vivechaks;if(q)list=list.filter(v=>(v.naam+v.pad+v.mobile).toLowerCase().includes(q));const tb=document.getElementById('vivechakTbody');if(!tb)return;if(list.length===0){tb.innerHTML=`<tr><td colspan="5" class="py-8 text-center text-slate-400">कोई विवेचक नहीं। ऊपर फॉर्म से जोड़ें।</td></tr>`;return;}tb.innerHTML=list.map((v,i)=>{const total=cases.filter(c=>c.vivechak===v.naam).length;const pending=cases.filter(c=>c.vivechak===v.naam&&c.aaropPatraStatus==='लंबित').length;return `<tr class="border-b"><td class="py-2 px-2">${i+1}</td><td><div class="font-medium text-sm">${v.pad} ${v.naam}</div><div class="text-[11px] text-slate-500">${v.badge||''} ${v.niyuktiDinank||''}</div></td><td class="text-xs">${v.mobile||'-'}</td><td><span class="text-xs">${total}</span> / <span class="text-xs text-red-600 font-semibold">${pending}</span></td><td class="text-center"><button onclick="editVivechak('${v.id}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delVivechak('${v.id}')" class="text-red-600 text-xs">Del</button></td></tr>`;}).join('');}
 function editVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}const v=vivechaks.find(x=>x.id===id);if(!v)return;editVivechakId=id;document.getElementById('v_name').value=v.naam;document.getElementById('v_pad').value=v.pad;document.getElementById('v_mobile').value=v.mobile;document.getElementById('v_badge').value=v.badge;document.getElementById('v_date').value=v.niyuktiDinank;document.getElementById('vivechakFormTitle').textContent='एडिट: '+v.naam;}
 function delVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}if(!confirm('हटाना है?'))return;vivechaks=vivechaks.filter(v=>v.id!==id);saveVivechaks();try{if(fbDb){fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).doc(id).delete();}}catch(e){}}
 function resetVivechakForm(){const f=document.getElementById('vivechakForm');if(f)f.reset();editVivechakId=null;const t=document.getElementById('vivechakFormTitle');if(t)t.textContent='नया विवेचक जोड़ें';}
 function openNistaran(mu){nistaranMuNo=mu;const a=document.getElementById('nistaranMu');if(a)a.textContent='मु0अ0सं0: '+mu;const b=document.getElementById('nistaranDate');if(b)b.value=new Date().toISOString().slice(0,10);const m=document.getElementById('nistaranModal');if(m){m.classList.remove('hidden');m.classList.add('flex');}}
-function closeNistaran(){const m=document.getElementById('nistaranModal');if(m){m.classList.add('hidden');m.classList.remove('flex');}nistaranMuNo=null;}
-function saveNistaran(){if(!nistaranMuNo)return;const st=document.getElementById('nistaranStatus').value,dt=document.getElementById('nistaranDate').value;const idx=cases.findIndex(c=>c.muAsNo===nistaranMuNo);if(idx>=0){cases[idx].aaropPatraStatus=st;cases[idx].aaropPatraDinank=dt;cases[idx].updatedAt=Date.now();saveCases();}closeNistaran();}
+function closeNistaran(){
+  const m=document.getElementById('nistaranModal'); if(m){ m.classList.add('hidden'); m.classList.remove('flex'); }
+  nistaranMuNo=null;
+  const f2=document.getElementById('f_chargePdf'); if(f2) f2.value='';
+  const n2=document.getElementById('chargePdfName'); if(n2) n2.textContent='';
+  tempChargePdfData=null; tempChargePdfName='';
+}
+function saveNistaran(){
+  if(!nistaranMuNo) return;
+  const st=document.getElementById('nistaranStatus').value;
+  const dt=document.getElementById('nistaranDate').value;
+  const idx=cases.findIndex(c=>c.muAsNo===nistaranMuNo);
+  if(idx>=0){
+    cases[idx].aaropPatraStatus=st;
+    cases[idx].aaropPatraDinank=dt;
+    cases[idx].updatedAt=Date.now();
+    if(tempChargePdfData){
+      cases[idx].chargeSheetPdfData=tempChargePdfData;
+      cases[idx].chargeSheetPdfName=tempChargePdfName;
+    }
+    saveCases();
+  }
+  closeNistaran();
+  clearPdfInputs();
+}
 function goPage(p){document.querySelectorAll('.page').forEach(s=>s.classList.add('hidden'));const pg=document.getElementById('page-'+p);if(pg)pg.classList.remove('hidden');document.querySelectorAll('.navBtn').forEach(b=>{b.classList.remove('bg-blue-600','text-white');if(b.dataset.page===p)b.classList.add('bg-blue-600','text-white');});const mn=document.getElementById('mobNav');if(mn)mn.value=p;}
 document.querySelectorAll('.navBtn').forEach(b=>b.addEventListener('click',()=>goPage(b.dataset.page)));
 document.getElementById('mobNav')?.addEventListener('change',e=>goPage(e.target.value));
@@ -816,7 +961,7 @@ function finalSecureSubmit(){
   setTimeout(()=>{const now=new Date().toISOString();localStorage.setItem(LS_FINAL,now);if(btn){btn.textContent='✅ सुरक्षित हो गया!';btn.className='mt-3 w-full bg-green-500 text-white py-3 rounded-xl font-bold';btn.disabled=false;}if(info){info.textContent='✅ अंतिम बार: '+new Date(now).toLocaleString();}if(msg){msg.classList.remove('hidden');msg.className='text-sm mt-3 p-3 rounded-xl bg-green-50 text-green-800 border-2 border-green-300 font-semibold';msg.innerHTML='🔒 <b>डेटा सुरक्षित!</b> '+cases.length+' केस, '+vivechaks.length+' विवेचक सेव।';}const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+cases.length+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}alert('✅ सुरक्षित! अब दोबारा खोलने पर यही दिखेगा।');},1500);
 }
 function loadFromFirebase(){if(!initFirebase(false))return;const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;try{if(window._fbUnsub)window._fbUnsub();}catch(e){}window._fbUnsub=fbDb.collection(coll).onSnapshot(snap=>{if(snap.empty){if(cases.length===0)renderAll();return;}const map={};snap.forEach(doc=>{const d=doc.data();if(d&&d.muAsNo)map[d.muAsNo]=d;});try{const local=JSON.parse(localStorage.getItem(LS_CASES)||'[]');local.forEach(c=>{if(c&&c.muAsNo&&(!map[c.muAsNo]||(c.updatedAt||0)>(map[c.muAsNo].updatedAt||0)))map[c.muAsNo]=c;});}catch(e){}cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));renderAll();const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+snap.size+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}},err=>{const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent='एरर: '+err.message;}});}
-function loadVivechaksFromFirebase(){if(!initFirebase(false))return;try{if(window._fbVUnsub)window._fbVUnsub();}catch(e){}window._fbVUnsub=fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).onSnapshot(snap=>{if(snap.empty){return;}const list=[];snap.forEach(doc=>{const d=doc.data();if(d&&d.id&&d.naam)list.push(d);});if(list.length>0){vivechaks=list;localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads();renderVivechakTable();renderDashboard();}});}
+function loadVivechaksFromFirebase(){if(!initFirebase(false))return;try{if(window._fbVUnsub)window._fbVUnsub();}catch(e){}window._fbVUnsub=fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).onSnapshot(snap=>{if(snap.empty){return;}const list=[];snap.forEach(doc=>{const d=doc.data();if(d&&d.id&&d.naam)list.push(d);});if(list.length>0){vivechaks=list;localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}});}
 
 // ===== EXCEL / CSV IMPORT =====
 function downloadImportTemplate(){
@@ -888,13 +1033,13 @@ function processImportRows(rows){
   cases=Object.values(mp);
   if(toAdd.length>0){vivechaks=[...vivechaks,...toAdd];localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}
   localStorage.setItem(LS_CASES,JSON.stringify(cases));
-  refreshVivechakSelects(); loadCustomPads();renderAll();
+  refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();
   if(msg)msg.textContent=`✅ ${add} नए, ${upd} अपडेट, ${toAdd.length} विवेचक | 46068 जैसे दिनांक सही बदले गए`;
   if(pv){pv.classList.remove('hidden');pv.innerHTML=`<b>प्रीव्यू:</b><br>`+cases.slice(-5).map(c=>`${c.muAsNo} | ${formatDateForExport(c.dinankSuchna)}`).join('<br>');}
   alert(`इम्पोर्ट सफल! ${add} नए, ${upd} अपडेट\n46068 जैसे Excel नंबर अब DD/MM/YYYY में बदल गए`);
 }
 
-function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
+function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
 function exportCSV(){
   let csv='मु0अ0सं0,धारा,घटना,सूचना,स्थल,वादी,बनाम,विवेचक,विवरण,स्थिति,दिनांक\n';
   cases.forEach(c=>{
@@ -920,7 +1065,7 @@ function exportExcel(){
 }
 
 function exportJSON(){const blob=new Blob([JSON.stringify({thana:'थाना एट',vivechaks,cases,secureAt:localStorage.getItem(LS_FINAL)},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ait_Secure_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-(function(){const auth=localStorage.getItem(LS_AUTH);if(auth){try{document.getElementById('loginOverlay').classList.add('hidden');const u=JSON.parse(auth);const su=document.getElementById('sideUser');if(su)su.textContent=u.name+' ('+(u.role==='admin'?'Admin':'विवेचक')+')';}catch(e){}loadAll();}else{let v=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');if(!v)v=[];vivechaks=v;refreshVivechakSelects(); loadCustomPads();}try{updatePassInfo();}catch(e){}})();
+(function(){const auth=localStorage.getItem(LS_AUTH);if(auth){try{document.getElementById('loginOverlay').classList.add('hidden');const u=JSON.parse(auth);const su=document.getElementById('sideUser');if(su)su.textContent=u.name+' ('+(u.role==='admin'?'Admin':'विवेचक')+')';}catch(e){}loadAll();}else{let v=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');if(!v)v=[];vivechaks=v;refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();}try{updatePassInfo();}catch(e){}})();
 
 
 </script>
