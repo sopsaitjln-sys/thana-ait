@@ -502,10 +502,55 @@ function setupPdfInputs(){
     reader.readAsDataURL(file);
   });
 }
+
 function viewPdf(dataUrl, name){
   if(!dataUrl){ alert('PDF नहीं है'); return; }
-  const w=window.open(); w.document.write(`<html><head><title>${name}</title></head><body style="margin:0"><iframe src="${dataUrl}" style="width:100%;height:100vh;border:0"></iframe></body></html>`);
+  try{
+    const arr = dataUrl.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+    const blob = new Blob([u8arr], {type: mime});
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, '_blank');
+    if(!win){
+      const a=document.createElement('a');
+      a.href=blobUrl;
+      a.download=name||'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(blobUrl), 1000);
+    } else {
+      setTimeout(()=>URL.revokeObjectURL(blobUrl), 60000);
+    }
+  }catch(e){
+    console.error('PDF view error', e);
+    try{
+      const w=window.open();
+      if(w){
+        w.document.write('<html><head><title>'+(name||'PDF')+'</title></head><body style="margin:0"><iframe src="'+dataUrl+'" style="width:100%;height:100vh;border:0"></iframe></body></html>');
+      }
+    }catch(e2){
+      const a=document.createElement('a');
+      a.href=dataUrl;
+      a.download=name||'document.pdf';
+      a.click();
+    }
+  }
 }
+function viewPdfByMuNo(muNo, type){
+  const c=cases.find(x=>x.muAsNo===muNo);
+  if(!c){ alert('केस नहीं मिला: '+muNo); return; }
+  const data = type==='fir' ? c.firPdfData : c.chargeSheetPdfData;
+  const name = type==='fir' ? (c.firPdfName||'FIR_'+muNo+'.pdf') : (c.chargeSheetPdfName||'ChargeSheet_'+muNo+'.pdf');
+  if(!data){ alert(type==='fir' ? 'FIR PDF नहीं है' : 'आरोप पत्र PDF नहीं है'); return; }
+  viewPdf(data, name);
+}
+
 function clearPdfInputs(){
   tempFirPdfData=null; tempFirPdfName=''; tempChargePdfData=null; tempChargePdfName='';
   const f1=document.getElementById('f_firPdf'); if(f1) f1.value='';
@@ -705,10 +750,11 @@ function renderCasesTable(){
     tb.innerHTML=`<tr><td colspan="10" class="py-10 text-center text-slate-400">कोई डेटा नहीं।</td></tr>`; return;
   }
   tb.innerHTML=list.map((c,idx)=>{
-    const hasFir = c.firPdfData ? `<button onclick="viewPdf(cases.find(x=>x.muAsNo==='${c.muAsNo}').firPdfData, '${(c.firPdfName||'FIR').replace(/'/g,"\\'")}')" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mr-1">FIR</button>` : '';
-    const hasCharge = c.chargeSheetPdfData ? `<button onclick="viewPdf(cases.find(x=>x.muAsNo==='${c.muAsNo}').chargeSheetPdfData, '${(c.chargeSheetPdfName||'Charge').replace(/'/g,"\\'")}')" class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">CS</button>` : '';
+    const safeMu = c.muAsNo.replace(/'/g, "\\'");
+    const hasFir = c.firPdfData ? `<button onclick="viewPdfByMuNo('${safeMu}', 'fir')" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mr-1">FIR</button>` : '';
+    const hasCharge = c.chargeSheetPdfData ? `<button onclick="viewPdfByMuNo('${safeMu}', 'charge')" class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">CS</button>` : '';
     const pdfCell = (hasFir||hasCharge) ? hasFir+hasCharge : '<span class="text-[10px] text-slate-400">-</span>';
-    return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td class="text-xs">${c.aaropPatraDinank?formatDateForExport(c.aaropPatraDinank):''}</td><td class="text-center">${pdfCell}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${c.muAsNo}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${c.muAsNo}')" class="text-red-600 text-xs">Del</button></td></tr>`;
+    return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td class="text-xs">${c.aaropPatraDinank?formatDateForExport(c.aaropPatraDinank):''}</td><td class="text-center">${pdfCell}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${safeMu}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${safeMu}')" class="text-red-600 text-xs">Del</button></td></tr>`;
   }).join('');
 }
 function renderPending(){const fv=
