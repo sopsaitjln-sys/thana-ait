@@ -914,31 +914,79 @@ function renderVivechakTable(){const q=(document.getElementById('vivechakSearch'
 function editVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}const v=vivechaks.find(x=>x.id===id);if(!v)return;editVivechakId=id;document.getElementById('v_name').value=v.naam;document.getElementById('v_pad').value=v.pad;document.getElementById('v_mobile').value=v.mobile;document.getElementById('v_badge').value=v.badge;document.getElementById('v_date').value=v.niyuktiDinank;document.getElementById('vivechakFormTitle').textContent='एडिट: '+v.naam;}
 function delVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}if(!confirm('हटाना है?'))return;vivechaks=vivechaks.filter(v=>v.id!==id);saveVivechaks();try{if(fbDb){fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).doc(id).delete();}}catch(e){}}
 function resetVivechakForm(){const f=document.getElementById('vivechakForm');if(f)f.reset();editVivechakId=null;const t=document.getElementById('vivechakFormTitle');if(t)t.textContent='नया विवेचक जोड़ें';}
-function openNistaran(mu){nistaranMuNo=mu;const a=document.getElementById('nistaranMu');if(a)a.textContent='मु0अ0सं0: '+mu;const b=document.getElementById('nistaranDate');if(b)b.value=new Date().toISOString().slice(0,10);const m=document.getElementById('nistaranModal');if(m){m.classList.remove('hidden');m.classList.add('flex');}}
-function closeNistaran(){
-  const m=document.getElementById('nistaranModal'); if(m){ m.classList.add('hidden'); m.classList.remove('flex'); }
-  nistaranMuNo=null;
+function openNistaran(mu){
+  console.log('openNistaran', mu);
+  nistaranMuNo=mu;
+  const a=document.getElementById('nistaranMu');
+  if(a) a.textContent='मु0अ0सं0: '+mu;
+  const b=document.getElementById('nistaranDate');
+  if(b) b.value=new Date().toISOString().slice(0,10);
+  const m=document.getElementById('nistaranModal');
+  if(m){ m.classList.remove('hidden'); m.classList.add('flex'); }
+  // Reset charge PDF temp
+  tempChargePdfData=null; tempChargePdfName='';
   const f2=document.getElementById('f_chargePdf'); if(f2) f2.value='';
   const n2=document.getElementById('chargePdfName'); if(n2) n2.textContent='';
-  tempChargePdfData=null; tempChargePdfName='';
+}
+function closeNistaran(){
+  const m=document.getElementById('nistaranModal');
+  if(m){ m.classList.add('hidden'); m.classList.remove('flex'); }
+  nistaranMuNo=null;
+  // Don't clear here, clear in save
 }
 function saveNistaran(){
-  if(!nistaranMuNo) return;
-  const st=document.getElementById('nistaranStatus').value;
-  const dt=document.getElementById('nistaranDate').value;
+  console.log('saveNistaran called, muNo:', nistaranMuNo);
+  if(!nistaranMuNo){
+    alert('मु0अ0सं0 नहीं मिला');
+    return;
+  }
+  const stEl=document.getElementById('nistaranStatus');
+  const dtEl=document.getElementById('nistaranDate');
+  if(!stEl || !dtEl){
+    alert('फॉर्म एलिमेंट नहीं मिला');
+    return;
+  }
+  const st=stEl.value;
+  const dt=dtEl.value;
+  if(!dt){
+    alert('कृपया दिनांक चुनें');
+    return;
+  }
   const idx=cases.findIndex(c=>c.muAsNo===nistaranMuNo);
-  if(idx>=0){
-    cases[idx].aaropPatraStatus=st;
-    cases[idx].aaropPatraDinank=dt;
-    cases[idx].updatedAt=Date.now();
-    if(tempChargePdfData){
-      cases[idx].chargeSheetPdfData=tempChargePdfData;
-      cases[idx].chargeSheetPdfName=tempChargePdfName;
-    }
+  if(idx<0){
+    alert('केस नहीं मिला: '+nistaranMuNo);
+    return;
+  }
+  console.log('Updating case', idx, st, dt);
+  cases[idx].aaropPatraStatus=st;
+  cases[idx].aaropPatraDinank=dt;
+  cases[idx].updatedAt=Date.now();
+  if(tempChargePdfData){
+    cases[idx].chargeSheetPdfData=tempChargePdfData;
+    cases[idx].chargeSheetPdfName=tempChargePdfName;
+    console.log('Charge PDF attached', tempChargePdfName);
+  }
+  try{
     saveCases();
+    console.log('saveCases success');
+  }catch(e){
+    console.error('saveCases failed', e);
+    // Try without PDFs if quota exceeded
+    if(e.name==='QuotaExceededError' || String(e).includes('quota')){
+      alert('स्टोरेज फुल है, PDF के बिना सेव किया जा रहा है। पुरानी PDF हटाकर दोबारा कोशिश करें।');
+      // Remove PDFs to save space
+      if(cases[idx].chargeSheetPdfData) delete cases[idx].chargeSheetPdfData;
+      if(cases[idx].firPdfData) delete cases[idx].firPdfData;
+      try{ saveCases(); }catch(e2){ alert('सेव फेल: '+e2.message); }
+    } else {
+      alert('सेव में एरर: '+e.message);
+    }
   }
   closeNistaran();
   clearPdfInputs();
+  // Refresh pending view
+  if(typeof renderPending==='function') renderPending();
+  alert('निस्तारण सेव हो गया: '+st+' - '+dt);
 }
 function goPage(p){document.querySelectorAll('.page').forEach(s=>s.classList.add('hidden'));const pg=document.getElementById('page-'+p);if(pg)pg.classList.remove('hidden');document.querySelectorAll('.navBtn').forEach(b=>{b.classList.remove('bg-blue-600','text-white');if(b.dataset.page===p)b.classList.add('bg-blue-600','text-white');});const mn=document.getElementById('mobNav');if(mn)mn.value=p;}
 document.querySelectorAll('.navBtn').forEach(b=>b.addEventListener('click',()=>goPage(b.dataset.page)));
