@@ -181,7 +181,22 @@ aside::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
         <div class="mt-3 text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"><span id="filterInfo">कुल 0 में से 0 दिखाए जा रहे हैं</span></div>
         <div class="mt-3"><p class="text-[11px] font-semibold mb-2">विवेचकवार सार - क्लिक करके फिल्टर लगाएं:</p><div id="pendingVivechakSummary" class="flex flex-wrap gap-2"></div></div>
       </div>
-      <div class="bg-white rounded-2xl border shadow-sm p-4"><div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b"><tr><th class="text-left py-2 px-2 w-12">क्र0</th><th class="text-left py-2">मु0अ0सं0</th><th class="text-left">विवेचक</th><th class="text-left">वादी / बनाम</th><th class="text-left">सूचना दिनांक</th><th class="text-left">लंबित दिन</th><th>निस्तारण</th></tr></thead><tbody id="pendingTbody"></tbody></table></div><p id="pendingEmpty" class="hidden text-center text-sm text-slate-500 py-10">इस फिल्टर में कोई लंबित विवेचना नहीं मिली</p></div>
+      <div class="bg-white rounded-2xl border shadow-sm p-4">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-semibold text-sm">लंबित सूची - <span id="pendingCountInfo" class="text-slate-500">0</span></h3>
+          <button onclick="exportPendingExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">📥 Excel Export</button>
+        </div>
+        <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b bg-slate-50">
+          <tr>
+            <th class="text-left py-2 px-2 w-12">क्र0</th>
+            <th class="text-left py-2 cursor-pointer hover:text-blue-600 select-none" onclick="sortPendingBy('muAsNo')">मु0अ0सं0 <span id="sortPendMuIcon">↕</span></th>
+            <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortPendingBy('vivechak')">विवेचक <span id="sortPendVivechakIcon">↕</span></th>
+            <th class="text-left">वादी / बनाम</th>
+            <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortPendingBy('suchna')">सूचना दिनांक <span id="sortPendSuchnaIcon">↕</span></th>
+            <th class="text-left">लंबित दिन</th>
+            <th>निस्तारण</th>
+          </tr>
+        </thead><tbody id="pendingTbody"></tbody></table></div><p id="pendingEmpty" class="hidden text-center text-sm text-slate-500 py-10">इस फिल्टर में कोई लंबित विवेचना नहीं मिली</p></div>
       <div class="bg-white rounded-2xl border shadow-sm p-4 mt-4">
         <h3 class="font-semibold text-[#1e3a8a] mb-2">👮 विवेचकवार सम्पूर्ण लम्बित अभियोग (वर्षवार फ़िल्टर सहित)</h3>
         <p class="text-[11px] text-slate-500 mb-3">नीचे हर विवेचक के पास कुल कितने लम्बित केस हैं, और उनके मु0अ0सं0 की पूरी सूची दिख रही है। डैशबोर्ड वर्ष फिल्टर से यह भी फ़िल्टर होगा।</p>
@@ -687,10 +702,121 @@ function renderCasesTable(){
   }).join('');
 }
 function renderPending(){
-  const fv=document.getElementById('filterVivechak')?.value||'all',fa=document.getElementById('filterAvadhi')?.value||'all',fb=document.getElementById('filterBase')?.value||'suchna',sort=document.getElementById('filterSort')?.value||'pending_desc',cf=document.getElementById('customFrom')?.value||'',ct=document.getElementById('customTo')?.value||'';let list=cases.filter(c=>c.aaropPatraStatus==='लंबित');const u=getCurrentUser();if(u&&u.role==='vivechak')list=list.filter(c=>c.vivechak===u.name);if(fv!=='all')list=list.filter(c=>c.vivechak===fv);const today=new Date();if(fa!=='all'&&fa!=='custom'){const days=parseInt(fa);const limit=new Date();if(fa==='today'){limit.setHours(0,0,0,0);}else{limit.setDate(today.getDate()-days);}list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});}if(fa==='custom'&&cf&&ct){const from=new Date(cf),to=new Date(ct);list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});}list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});const fi=document.getElementById('filterInfo');if(fi)fi.textContent=`कुल ${cases.filter(c=>c.aaropPatraStatus==='लंबित').length} में से ${list.length}`;const map={};cases.filter(c=>c.aaropPatraStatus==='लंबित').forEach(c=>{map[c.vivechak]=(map[c.vivechak]||0)+1;});const pvs=document.getElementById('pendingVivechakSummary');if(pvs)pvs.innerHTML=Object.entries(map).map(([n,cnt])=>`<button onclick="setVivechakFilter('${n}')" class="text-xs border px-3 py-1.5 rounded-full ${fv===n?'bg-blue-600 text-white':'bg-white'}">${n} <span class="ml-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">${cnt}</span></button>`).join('');const tbody=document.getElementById('pendingTbody');const empty=document.getElementById('pendingEmpty');if(!tbody)return;if(list.length===0){tbody.innerHTML='';if(empty)empty.classList.remove('hidden');}else{if(empty)empty.classList.add('hidden');tbody.innerHTML=list.map((c, idx)=>{const d=new Date(c.dinankSuchna||new Date());const days=Math.max(0,Math.floor((today-d)/86400000));return `<tr class="border-b"><td class="py-2 px-2 text-xs font-bold text-slate-600">${idx+1}</td><td class="py-2 font-medium">${c.muAsNo}<div class="text-[11px] text-slate-500">${c.dhara}</div></td><td class="text-xs">${c.vivechak}</td><td class="text-xs"><div>${c.wadi}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam}</div></td><td class="text-xs">${c.dinankSuchna||''}</td><td><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">${days} दिन</span></td><td><button onclick="openNistaran('${c.muAsNo}')" class="bg-[#1e3a8a] text-white text-xs px-3 py-1.5 rounded-full">निस्तारण</button></td></tr>`;}).join('');}
+  const fv=document.getElementById('filterVivechak')?.value||'all',fa=document.getElementById('filterAvadhi')?.value||'all',fb=document.getElementById('filterBase')?.value||'suchna',sort=document.getElementById('filterSort')?.value||'pending_desc',cf=document.getElementById('customFrom')?.value||'',ct=document.getElementById('customTo')?.value||'';let list=cases.filter(c=>c.aaropPatraStatus==='लंबित');const u=getCurrentUser();if(u&&u.role==='vivechak')list=list.filter(c=>c.vivechak===u.name);if(fv!=='all')list=list.filter(c=>c.vivechak===fv);const today=new Date();if(fa!=='all'&&fa!=='custom'){const days=parseInt(fa);const limit=new Date();if(fa==='today'){limit.setHours(0,0,0,0);}else{limit.setDate(today.getDate()-days);}list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});}if(fa==='custom'&&cf&&ct){const from=new Date(cf),to=new Date(ct);list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});}list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});
+// Custom sort by विवेचक / सूचना पर क्लिक
+if(pendingSortField){
+  list.sort((a,b)=>{
+    let va, vb;
+    if(pendingSortField==='vivechak'){
+      const ra = typeof getPadRank==='function'?getPadRank(a.vivechak||'') : 0;
+      const rb = typeof getPadRank==='function'?getPadRank(b.vivechak||'') : 0;
+      // Actually pad rank by vivechak name's pad
+      const vA = vivechaks.find(v=>v.naam===a.vivechak); const vB = vivechaks.find(v=>v.naam===b.vivechak);
+      const pa = vA ? (typeof getPadRank==='function'?getPadRank(vA.pad):0) : 0;
+      const pb = vB ? (typeof getPadRank==='function'?getPadRank(vB.pad):0) : 0;
+      if(pa!==pb) return pendingSortOrder==='asc'? pb-pa : pa-pb;
+      va = a.vivechak||''; vb = b.vivechak||'';
+    } else if(pendingSortField==='suchna'){
+      va = a.dinankSuchna||''; vb = b.dinankSuchna||'';
+    } else if(pendingSortField==='muAsNo'){
+      const ka = typeof getExcelSortKey==='function'?getExcelSortKey(a):{year:9999,num:0};
+      const kb = typeof getExcelSortKey==='function'?getExcelSortKey(b):{year:9999,num:0};
+      if(ka.year!==kb.year) return pendingSortOrder==='asc'? ka.year-kb.year : kb.year-ka.year;
+      if(ka.num!==kb.num) return pendingSortOrder==='asc'? ka.num-kb.num : kb.num-ka.num;
+      va = ka.mu; vb = kb.mu;
+    }
+    if(va<vb) return pendingSortOrder==='asc'? -1:1;
+    if(va>vb) return pendingSortOrder==='asc'? 1:-1;
+    return 0;
+  });
+  // Update icons
+  const muIcon=document.getElementById('sortPendMuIcon'); if(muIcon) muIcon.textContent = pendingSortField==='muAsNo' ? (pendingSortOrder==='asc'?'↑':'↓') : '↕';
+  const vivIcon=document.getElementById('sortPendVivechakIcon'); if(vivIcon) vivIcon.textContent = pendingSortField==='vivechak' ? (pendingSortOrder==='asc'?'↑':'↓') : '↕';
+  const suchIcon=document.getElementById('sortPendSuchnaIcon'); if(suchIcon) suchIcon.textContent = pendingSortField==='suchna' ? (pendingSortOrder==='asc'?'↑':'↓') : '↕';
+}
+// Save for exact export as shown
+lastPendingFilteredList = list.slice();
+// Update pending count
+const pcInfo=document.getElementById('pendingCountInfo'); if(pcInfo) pcInfo.textContent = list.length + ' रिकॉर्ड';const fi=document.getElementById('filterInfo');if(fi)fi.textContent=`कुल ${cases.filter(c=>c.aaropPatraStatus==='लंबित').length} में से ${list.length}`;const map={};cases.filter(c=>c.aaropPatraStatus==='लंबित').forEach(c=>{map[c.vivechak]=(map[c.vivechak]||0)+1;});const pvs=document.getElementById('pendingVivechakSummary');if(pvs)pvs.innerHTML=Object.entries(map).map(([n,cnt])=>`<button onclick="setVivechakFilter('${n}')" class="text-xs border px-3 py-1.5 rounded-full ${fv===n?'bg-blue-600 text-white':'bg-white'}">${n} <span class="ml-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">${cnt}</span></button>`).join('');const tbody=document.getElementById('pendingTbody');const empty=document.getElementById('pendingEmpty');if(!tbody)return;if(list.length===0){tbody.innerHTML='';if(empty)empty.classList.remove('hidden');}else{if(empty)empty.classList.add('hidden');tbody.innerHTML=list.map((c, idx)=>{const d=new Date(c.dinankSuchna||new Date());const days=Math.max(0,Math.floor((today-d)/86400000));return `<tr class="border-b"><td class="py-2 px-2 text-xs font-bold text-slate-600">${idx+1}</td><td class="py-2 font-medium">${c.muAsNo}<div class="text-[11px] text-slate-500">${c.dhara}</div></td><td class="text-xs">${c.vivechak}</td><td class="text-xs"><div>${c.wadi}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam}</div></td><td class="text-xs">${c.dinankSuchna||''}</td><td><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">${days} दिन</span></td><td><button onclick="openNistaran('${c.muAsNo}')" class="bg-[#1e3a8a] text-white text-xs px-3 py-1.5 rounded-full">निस्तारण</button></td></tr>`;}).join('');}
 }
 function setVivechakFilter(name){const el=document.getElementById('filterVivechak');if(el){el.value=name;renderPending();}}
 function clearFilters(){const a=document.getElementById('filterVivechak');if(a)a.value='all';const b=document.getElementById('filterAvadhi');if(b)b.value='all';const c=document.getElementById('filterBase');if(c)c.value='suchna';const d=document.getElementById('filterSort');if(d)d.value='pending_desc';const e=document.getElementById('customFrom');if(e)e.value='';const f=document.getElementById('customTo');if(f)f.value='';const g=document.getElementById('customDateRow');if(g)g.classList.add('hidden');renderPending();}
+let pendingSortField=null;
+let pendingSortOrder='asc';
+function sortPendingBy(field){
+  if(pendingSortField===field){
+    pendingSortOrder = pendingSortOrder==='asc'?'desc':'asc';
+  } else {
+    pendingSortField=field;
+    pendingSortOrder='asc';
+  }
+  renderPending();
+}
+let lastPendingFilteredList = [];
+function exportPendingExcel(){
+  // Export exactly as shown on screen - use last filtered list
+  let list = lastPendingFilteredList && lastPendingFilteredList.length>0 ? lastPendingFilteredList : [];
+  if(list.length===0){
+    // If no cached list, compute same as renderPending
+    const fv=document.getElementById('filterVivechak')?.value||'all';
+    const fa=document.getElementById('filterAvadhi')?.value||'all';
+    const fb=document.getElementById('filterBase')?.value||'suchna';
+    const sort=document.getElementById('filterSort')?.value||'pending_desc';
+    const cf=document.getElementById('customFrom')?.value||'';
+    const ct=document.getElementById('customTo')?.value||'';
+    list=cases.filter(c=>c.aaropPatraStatus==='लंबित');
+    const u=getCurrentUser(); if(u&&u.role==='vivechak') list=list.filter(c=>c.vivechak===u.name);
+    if(fv!=='all') list=list.filter(c=>c.vivechak===fv);
+    const today=new Date();
+    if(fa!=='all'&&fa!=='custom'){
+      const days=parseInt(fa); const limit=new Date();
+      if(fa==='today'){limit.setHours(0,0,0,0);} else {limit.setDate(today.getDate()-days);}
+      list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});
+    }
+    if(fa==='custom'&&cf&&ct){
+      const from=new Date(cf),to=new Date(ct);
+      list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});
+    }
+    list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});
+    if(pendingSortField){
+      list.sort((a,b)=>{
+        let va, vb;
+        if(pendingSortField==='vivechak'){
+          const vA = vivechaks.find(v=>v.naam===a.vivechak); const vB = vivechaks.find(v=>v.naam===b.vivechak);
+          const pa = vA ? (typeof getPadRank==='function'?getPadRank(vA.pad):0) : 0;
+          const pb = vB ? (typeof getPadRank==='function'?getPadRank(vB.pad):0) : 0;
+          if(pa!==pb) return pendingSortOrder==='asc'? pb-pa : pa-pb;
+          va = a.vivechak||''; vb = b.vivechak||'';
+        } else if(pendingSortField==='suchna'){ va = a.dinankSuchna||''; vb = b.dinankSuchna||''; }
+        else if(pendingSortField==='muAsNo'){
+          const ka = typeof getExcelSortKey==='function'?getExcelSortKey(a):{year:9999,num:0,mu:a.muAsNo||''};
+          const kb = typeof getExcelSortKey==='function'?getExcelSortKey(b):{year:9999,num:0,mu:b.muAsNo||''};
+          if(ka.year!==kb.year) return pendingSortOrder==='asc'? ka.year-kb.year : kb.year-ka.year;
+          if(ka.num!==kb.num) return pendingSortOrder==='asc'? ka.num-kb.num : kb.num-ka.num;
+          va = ka.mu; vb = kb.mu;
+        }
+        if(va<vb) return pendingSortOrder==='asc'? -1:1;
+        if(va>vb) return pendingSortOrder==='asc'? 1:-1;
+        return 0;
+      });
+    }
+  }
+  if(list.length===0){ alert('कोई लंबित डेटा नहीं - पहले फिल्टर लगाएं'); return; }
+  const today=new Date();
+  const headers=["क्र0","मु0अ0सं0","धारा","विवेचक","पद","वादी","बनाम","घटना स्थल","सूचना दिनांक","घटना दिनांक","लंबित दिन","विवरण","स्थिति"];
+  const data=[headers];
+  list.forEach((c, idx)=>{
+    const days=Math.max(0, Math.floor((today - new Date(c.dinankSuchna||today))/86400000));
+    const v = vivechaks.find(vv=>vv.naam===c.vivechak);
+    const pad = v ? v.pad : '';
+    data.push([idx+1, c.muAsNo||'', c.dhara||'', c.vivechak||'', pad, c.wadi||'', c.banam||'', c.ghatnaSthal||'', formatDateForExport(c.dinankSuchna), formatDateForExport(c.dinankGhatna), days, c.vivaran||'', c.aaropPatraStatus||'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:6},{wch:12},{wch:15},{wch:18},{wch:10},{wch:25},{wch:20},{wch:20},{wch:12},{wch:12},{wch:10},{wch:35},{wch:10}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Lambit_FR");
+  const filterName = document.getElementById('filterVivechak')?.value || 'All';
+  XLSX.writeFile(wb, 'Lambit_'+(filterName!=='all'?filterName+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx');
+}
 function updateBadge(){const el=document.getElementById('pendingBadge');if(el)el.textContent=cases.filter(c=>c.aaropPatraStatus==='लंबित').length;}
 document.getElementById('caseForm')?.addEventListener('submit',e=>{
   e.preventDefault();
