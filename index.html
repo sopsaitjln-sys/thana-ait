@@ -9,7 +9,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>body{font-family:'Noto Sans Devanagari',system-ui,sans-serif}</style>
+<style>body{font-family:'Noto Sans Devanagari',system-ui,sans-serif}/* Locked Sidebar */
+aside::-webkit-scrollbar{width:5px}
+aside::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
+</style>
 </head>
 <body class="bg-[#f3f5f9] min-h-screen text-slate-800">
 <!-- LOGIN OVERLAY -->
@@ -47,7 +50,7 @@
 </div>
 
 <div class="flex min-h-screen">
-  <aside class="w-72 bg-white border-r shadow-sm hidden md:flex flex-col">
+  <aside class="w-72 bg-white border-r shadow-sm hidden md:flex flex-col sticky top-0 h-screen overflow-y-auto shrink-0 z-30">
     <div class="p-6 border-b">
       <h2 class="font-bold text-[#1e3a8a] text-lg leading-tight">थाना एट</h2>
       <p class="text-xs text-slate-500">जिला जालौन (उ0प्र0) • अपराध रजिस्टर</p>
@@ -59,14 +62,16 @@
       <button data-page="pending" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">⏳ लंबित आरोप पत्र / FR <span id="pendingBadge" class="ml-2 bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-full">0</span></button>
       <button data-page="vivechak" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">👮 विवेचक प्रबंधन</button>
       <button data-page="cloud" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">☁ क्लाउड / समन्वय</button>
+      <div class="pt-2 mt-2 border-t">
+        <button onclick="doLogout()" class="w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 text-red-600 font-semibold bg-red-50/50 border border-red-100">🚪 लॉगआउट</button>
+      </div>
     </nav>
-    <div class="p-4 border-t">
+    <div class="p-4 border-t bg-slate-50">
       <div class="text-xs text-slate-500">लॉगिन: <span id="sideUser" class="font-semibold text-slate-700"></span></div>
-      <button onclick="doLogout()" class="mt-2 w-full border rounded-lg py-2 text-sm hover:bg-slate-50">लॉगआउट</button>
     </div>
   </aside>
 
-  <main class="flex-1">
+  <main class="flex-1 md:h-screen md:overflow-y-auto">
     <div class="md:hidden bg-white border-b p-3 flex justify-between items-center sticky top-0 z-20">
       <div><p class="font-bold text-[#1e3a8a]">थाना एट, जालौन</p><p class="text-[11px] text-slate-500">अपराध रजिस्टर</p></div>
       <select id="mobNav" class="border rounded-lg px-2 py-1.5 text-sm">
