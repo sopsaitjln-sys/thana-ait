@@ -104,9 +104,15 @@ aside::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
           <h3 class="font-semibold mb-3">विवेचकवार लंबित सार (थानाध्यक्ष दृश्य)</h3>
           <div id="vivechakSummary" class="space-y-2"></div>
         </div>
-        <div class="bg-white rounded-2xl border shadow-sm p-5">
-          <h3 class="font-semibold mb-3">हाल के मुकदमे</h3>
-          <div id="recentCases" class="space-y-2 text-sm"></div>
+        <div class="space-y-4">
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <h3 class="font-semibold mb-3 flex justify-between items-center">हाल के मुकदमे <span class="text-[11px] bg-blue-50 text-blue-700 px-2 py-1 rounded-full">नवीनतम 5</span></h3>
+            <div id="recentCases" class="space-y-2 text-sm"></div>
+          </div>
+          <div class="bg-white rounded-2xl border shadow-sm p-5">
+            <h3 class="font-semibold mb-3 flex justify-between items-center">✅ हाल के निस्तारित अभियोग <span class="text-[11px] bg-green-50 text-green-700 px-2 py-1 rounded-full">आरोप पत्र / FR</span></h3>
+            <div id="recentDisposedCases" class="space-y-2 text-sm"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -672,7 +678,56 @@ function renderStats(){
   const d=document.getElementById('statFR');if(d)d.textContent=list.filter(c=>['अंतिम रिपोर्ट','खात्मा'].includes(c.aaropPatraStatus)).length;
   const info=document.getElementById('dashboardFilterInfo'); if(info){ let t=''; if(dashboardYearFilter!=='all') t+=`वर्ष:${dashboardYearFilter} `; if(dashboardVivechakFilter!=='all') t+=`विवेचक:${dashboardVivechakFilter}`; if(!t) t=`कुल ${cases.length} में से ${list.length}`; else t=`फिल्टर:${t}|${list.length}`; info.textContent=t; }
 }
-function renderDashboard(){const summary=document.getElementById('vivechakSummary');const list=getDashboardFilteredCases();if(vivechaks.length===0){if(summary)summary.innerHTML='<p class="text-sm text-amber-600 p-3 bg-amber-50 rounded-xl">कोई विवेचक नहीं। Admin से जोड़ें।</p>';}else{const map={};vivechaks.forEach(v=>map[v.naam]={total:0,pending:0});list.forEach(c=>{if(!map[c.vivechak])map[c.vivechak]={total:0,pending:0};map[c.vivechak].total++;if(c.aaropPatraStatus==='लंबित')map[c.vivechak].pending++;});if(summary)summary.innerHTML=Object.entries(map).map(([name,val])=>`<div class="flex justify-between items-center border rounded-xl px-4 py-3"><div><p class="font-semibold text-sm">${name}</p><p class="text-[11px] text-slate-500">कुल ${val.total} | लंबित ${val.pending}</p></div><span class="bg-red-50 text-red-700 text-xs px-3 py-1 rounded-full">${val.pending} लंबित</span></div>`).join('')||'<p class="text-sm text-slate-500">कोई डेटा नहीं</p>';}const recent=document.getElementById('recentCases');if(recent){if(list.length===0)recent.innerHTML='<p class="text-xs text-slate-400">कोई केस नहीं</p>';else recent.innerHTML=list.slice(0,5).map(c=>`<div class="flex justify-between border-b pb-2"><div><p class="font-medium">${c.muAsNo} - ${c.dhara}</p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p></div><span class="text-[11px] ${c.aaropPatraStatus==='लंबित'?'text-red-600':'text-green-600'}">${c.aaropPatraStatus}</span></div>`).join('');}}
+function renderDashboard(){
+  const summary=document.getElementById('vivechakSummary');
+  const list=getDashboardFilteredCases();
+  if(vivechaks.length===0){
+    if(summary)summary.innerHTML='<p class="text-sm text-amber-600 p-3 bg-amber-50 rounded-xl">कोई विवेचक नहीं। Admin से जोड़ें।</p>';
+  } else {
+    const map={};
+    vivechaks.forEach(v=>map[v.naam]={total:0,pending:0});
+    list.forEach(c=>{if(!map[c.vivechak])map[c.vivechak]={total:0,pending:0};map[c.vivechak].total++;if(c.aaropPatraStatus==='लंबित')map[c.vivechak].pending++;});
+    if(summary)summary.innerHTML=Object.entries(map).map(([name,val])=>`<div class="flex justify-between items-center border rounded-xl px-4 py-3"><div><p class="font-semibold text-sm">${name}</p><p class="text-[11px] text-slate-500">कुल ${val.total} | लंबित ${val.pending}</p></div><span class="bg-red-50 text-red-700 text-xs px-3 py-1 rounded-full">${val.pending} लंबित</span></div>`).join('')||'<p class="text-sm text-slate-500">कोई डेटा नहीं</p>';
+  }
+  // हाल के मुकदमे - नवीनतम 5 सूचना दिनांक + मुकदमा नंबर से सही क्रम
+  const recent=document.getElementById('recentCases');
+  if(recent){
+    if(list.length===0){
+      recent.innerHTML='<p class="text-xs text-slate-400">कोई केस नहीं</p>';
+    } else {
+      let sortedRecent = list.slice().sort((a,b)=>{
+        const da = new Date(a.dinankSuchna||a.dinankGhatna||a.updatedAt||0);
+        const db = new Date(b.dinankSuchna||b.dinankGhatna||b.updatedAt||0);
+        if(db - da !==0) return db - da;
+        // Same date - sort by मुकदमा नंबर बड़ा से छोटा (111 before 110)
+        const ka = (typeof getExcelSortKey==='function')?getExcelSortKey(a):{year:0,num:0};
+        const kb = (typeof getExcelSortKey==='function')?getExcelSortKey(b):{year:0,num:0};
+        if(kb.year!==ka.year) return kb.year - ka.year;
+        return kb.num - ka.num;
+      });
+      recent.innerHTML=sortedRecent.slice(0,5).map((c,idx)=>`<div class="flex justify-between border-b pb-2 gap-2"><div class="flex gap-2"><span class="bg-slate-900 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shrink-0 mt-0.5">${idx+1}</span><div><p class="font-medium">${c.muAsNo} - ${c.dhara}</p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p><div class="text-[10px] text-slate-400">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''} | ${c.vivechak||''}</div></div></div><span class="text-[11px] ${c.aaropPatraStatus==='लंबित'?'text-red-600 bg-red-50 px-2 py-0.5 rounded-full h-fit':'text-green-600 bg-green-50 px-2 py-0.5 rounded-full h-fit'}">${c.aaropPatraStatus}</span></div>`).join('');
+    }
+  }
+  // हाल के निस्तारित अभियोग - नवीनतम 5 सही क्रम में
+  const recentDisposed=document.getElementById('recentDisposedCases');
+  if(recentDisposed){
+    let disposed = list.filter(c=>c.aaropPatraStatus!=='लंबित');
+    if(disposed.length===0){
+      recentDisposed.innerHTML='<p class="text-xs text-slate-400">कोई निस्तारित केस नहीं</p>';
+    } else {
+      let sortedDisposed = disposed.slice().sort((a,b)=>{
+        const da = new Date(a.aaropPatraDinank||a.updatedAt||0);
+        const db = new Date(b.aaropPatraDinank||b.updatedAt||0);
+        if(db - da !==0) return db - da;
+        const ka = (typeof getExcelSortKey==='function')?getExcelSortKey(a):{year:0,num:0};
+        const kb = (typeof getExcelSortKey==='function')?getExcelSortKey(b):{year:0,num:0};
+        if(kb.year!==ka.year) return kb.year - ka.year;
+        return kb.num - ka.num;
+      });
+      recentDisposed.innerHTML=sortedDisposed.slice(0,5).map((c,idx)=>`<div class="flex justify-between border-b pb-2 gap-2"><div class="flex gap-2"><span class="bg-green-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shrink-0 mt-0.5">${idx+1}</span><div><p class="font-medium">${c.muAsNo} - ${c.dhara} <span class="text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full ml-1">${c.aaropPatraStatus}</span></p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p><div class="text-[10px] text-slate-400">${c.aaropPatraDinank?('निस्तारण: '+formatDateForExport(c.aaropPatraDinank)) : ''} | ${c.vivechak||''}</div></div></div><span class="text-[11px] text-blue-600">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</span></div>`).join('');
+    }
+  }
+}
 function renderCasesTable(){
   const q=(document.getElementById('caseSearch')?.value||'').toLowerCase();
   const u=getCurrentUser();
