@@ -349,7 +349,7 @@ function getVivechakPass(){return localStorage.getItem(LS_VIVECHAK_PASS)||'1234'
 let cases=[], vivechaks=[], editMu=null, editVivechakId=null, nistaranMuNo=null;
 let dashboardYearFilter='all';
 let casesSortField='muAsNo';
-let casesSortOrder='asc';
+let casesSortOrder='asc'; // Default yearwise 2025 then 2026
 function sortCasesBy(field){
   if(casesSortField===field){
     casesSortOrder = casesSortOrder==='asc' ? 'desc' : 'asc';
@@ -634,7 +634,21 @@ function loadAll(){
   refreshVivechakSelects(); loadCustomPads(); setupPdfInputs(); populateDashboardFilters(); renderAll(); try{updatePassInfo();}catch(e){}
   setTimeout(()=>{try{if(initFirebase(false)){const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● Firebase चालू';ss.className='text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full';}loadFromFirebase();loadVivechaksFromFirebase();loadPasswordsFromFirebase();const finfo=document.getElementById('finalSecureInfo');const ftime=localStorage.getItem(LS_FINAL);if(finfo&&ftime){finfo.textContent='✅ अंतिम बार सुरक्षित: '+new Date(ftime).toLocaleString();}}else{const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● लोकल मोड';ss.className='text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full';}}}catch(e){}},800);
 }
-function saveCases(){localStorage.setItem(LS_CASES,JSON.stringify(cases));try{if(document.getElementById('autoSync')?.checked)syncToCloud();}catch(e){}renderAll();}
+function saveCases(){
+  // Keep internal array sorted yearwise for consistency
+  try{
+    if(typeof getExcelSortKey==='function'){
+      cases.sort((a,b)=>{
+        const ka=getExcelSortKey(a), kb=getExcelSortKey(b);
+        if(ka.year!==kb.year) return ka.year-kb.year;
+        return ka.num-kb.num;
+      });
+    }
+  }catch(e){}
+  localStorage.setItem(LS_CASES,JSON.stringify(cases));
+  try{if(document.getElementById('autoSync')?.checked)syncToCloud();}catch(e){}
+  renderAll();
+}
 function saveVivechaks(){localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}
 function refreshVivechakSelects(){
   let sorted = vivechaks.slice().sort((a,b)=>{
@@ -666,25 +680,31 @@ function renderCasesTable(){
   if(u&&u.role==='vivechak') list=list.filter(c=>c.vivechak===u.name);
   if(q) list=list.filter(c=>(c.muAsNo+' '+c.dhara+' '+c.wadi+' '+c.banam+' '+c.vivechak).toLowerCase().includes(q));
   list = list.slice().sort((a,b)=>{
-    let va, vb;
+    // Robust year+number sort for muAsNo
     if(casesSortField==='muAsNo'){
-      va = String(a.muAsNo||'').toLowerCase();
-      vb = String(b.muAsNo||'').toLowerCase();
-      const pa = va.match(/(\d+)\/(\d+)/); const pb = vb.match(/(\d+)\/(\d+)/);
-      if(pa && pb){
-        const ya=parseInt(pa[2]), yb=parseInt(pb[2]);
-        if(ya!==yb) return casesSortOrder==='asc' ? ya-yb : yb-ya;
-        return casesSortOrder==='asc' ? parseInt(pa[1])-parseInt(pb[1]) : parseInt(pb[1])-parseInt(pa[1]);
-      }
+      const ka = (typeof getExcelSortKey==='function') ? getExcelSortKey(a) : (()=>{
+        const m = String(a.muAsNo||'').trim().match(/(\d+)\s*\/\s*(\d{4})/);
+        return m ? {year:parseInt(m[2]), num:parseInt(m[1]), mu:String(a.muAsNo||'')} : {year:9999, num:0, mu:String(a.muAsNo||'')};
+      })();
+      const kb = (typeof getExcelSortKey==='function') ? getExcelSortKey(b) : (()=>{
+        const m = String(b.muAsNo||'').trim().match(/(\d+)\s*\/\s*(\d{4})/);
+        return m ? {year:parseInt(m[2]), num:parseInt(m[1]), mu:String(b.muAsNo||'')} : {year:9999, num:0, mu:String(b.muAsNo||'')};
+      })();
+      if(ka.year!==kb.year) return casesSortOrder==='asc' ? ka.year-kb.year : kb.year-ka.year;
+      if(ka.num!==kb.num) return casesSortOrder==='asc' ? ka.num-kb.num : kb.num-ka.num;
+      return casesSortOrder==='asc' ? ka.mu.localeCompare(kb.mu) : kb.mu.localeCompare(ka.mu);
     } else if(casesSortField==='dinankSuchna'){
-      va = a.dinankSuchna||a.dinankGhatna||'';
-      vb = b.dinankSuchna||b.dinankGhatna||'';
+      let va = a.dinankSuchna||a.dinankGhatna||'';
+      let vb = b.dinankSuchna||b.dinankGhatna||'';
+      if(va<vb) return casesSortOrder==='asc' ? -1 : 1;
+      if(va>vb) return casesSortOrder==='asc' ? 1 : -1;
+      return 0;
     } else {
-      va = String(a[casesSortField]||''); vb = String(b[casesSortField]||'');
+      let va = String(a[casesSortField]||''); let vb = String(b[casesSortField]||'');
+      if(va<vb) return casesSortOrder==='asc' ? -1 : 1;
+      if(va>vb) return casesSortOrder==='asc' ? 1 : -1;
+      return 0;
     }
-    if(va<vb) return casesSortOrder==='asc' ? -1 : 1;
-    if(va>vb) return casesSortOrder==='asc' ? 1 : -1;
-    return 0;
   });
   const muIcon=document.getElementById('sortMuIcon'); const dateIcon=document.getElementById('sortDateIcon');
   if(muIcon) muIcon.textContent = casesSortField==='muAsNo' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕';
