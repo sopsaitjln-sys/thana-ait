@@ -1022,9 +1022,32 @@ function processImportRows(rows){
   alert(`इम्पोर्ट सफल! ${add} नए, ${upd} अपडेट`);
 }
 function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
+function getExcelSortKey(c){
+  const mu = String(c.muAsNo||'').trim();
+  const parts = mu.split('/');
+  let num = parseInt(parts[0])||0;
+  let y = getCaseYear(c);
+  let year = y && /^\d{4}$/.test(y) ? parseInt(y) : 9999;
+  // If mu contains year part, prefer that for year
+  if(parts.length>1){
+    const py = parseInt(parts[parts.length-1]);
+    if(!isNaN(py) && py>2000 && py<2100) year = py;
+  }
+  return {year, num, mu};
+}
+function getSortedCasesForExport(){
+  return cases.slice().sort((a,b)=>{
+    const ka = getExcelSortKey(a);
+    const kb = getExcelSortKey(b);
+    if(ka.year!==kb.year) return ka.year-kb.year;
+    if(ka.num!==kb.num) return ka.num-kb.num;
+    return ka.mu.localeCompare(kb.mu);
+  });
+}
 function exportCSV(){
+  let sorted = getSortedCasesForExport();
   let csv='मु0अ0सं0,धारा,घटना,सूचना,स्थल,वादी,बनाम,विवेचक,विवरण,स्थिति,दिनांक\n';
-  cases.forEach(c=>{
+  sorted.forEach(c=>{
     const muText = "'"+String(c.muAsNo).replace(/"/g,'""');
     const ghatna = formatDateForExport(c.dinankGhatna);
     const suchna = formatDateForExport(c.dinankSuchna);
@@ -1037,13 +1060,14 @@ function exportCSV(){
 function exportExcel(){
   const headers=["मु0अ0सं0","धारा","घटना","सूचना","स्थल","वादी","बनाम","विवेचक","विवरण","स्थिति","दिनांक"];
   const data=[headers];
-  cases.forEach(c=>{
+  let sorted = typeof getSortedCasesForExport==='function' ? getSortedCasesForExport() : cases.slice();
+  sorted.forEach(c=>{
     data.push([{v:c.muAsNo, t:'s'}, c.dhara||'', formatDateForExport(c.dinankGhatna), formatDateForExport(c.dinankSuchna), c.ghatnaSthal||'', c.wadi||'', c.banam||'', c.vivechak||'', c.vivaran||'', c.aaropPatraStatus||'', formatDateForExport(c.aaropPatraDinank)]);
   });
   const ws=XLSX.utils.aoa_to_sheet(data);
   ws['!cols']=[{wch:12},{wch:15},{wch:12},{wch:12},{wch:22},{wch:28},{wch:22},{wch:18},{wch:35},{wch:12},{wch:12}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Cases");
-  XLSX.writeFile(wb, 'Ait_Cases_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  XLSX.writeFile(wb, 'Ait_Cases_'+new Date().toISOString().slice(0,10)+'_YearWise.xlsx');
 }
 function exportJSON(){const blob=new Blob([JSON.stringify({thana:'थाना एट',vivechaks,cases,secureAt:localStorage.getItem(LS_FINAL)},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ait_Secure_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 (function(){const auth=localStorage.getItem(LS_AUTH);if(auth){try{document.getElementById('loginOverlay').classList.add('hidden');const u=JSON.parse(auth);const su=document.getElementById('sideUser');if(su)su.textContent=u.name+' ('+(u.role==='admin'?'Admin':'विवेचक')+')';}catch(e){}loadAll();}else{let v=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');if(!v)v=[];vivechaks=v;refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();}try{updatePassInfo();}catch(e){}})();
