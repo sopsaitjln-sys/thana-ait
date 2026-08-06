@@ -16,7 +16,7 @@
 <div id="loginOverlay" class="fixed inset-0 z-50 bg-[#0f1f4a]/90 backdrop-blur-sm flex items-center justify-center p-4">
   <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8">
     <div class="text-center mb-6">
-      <div class="w-16 h-16 bg-[#1e3a8a] rounded-full flex items-center justify-center mx-auto mb-3 text-white text-2xl">⚖️</div>
+      <div class="w-16 h-16 bg-[#1e3a8a] rounded-full flex items-center justify-center mx-auto mb-3 text-white text-2xl">⚖</div>
       <h1 class="text-xl font-bold text-[#1e3a8a]">थाना एट, जिला जालौन</h1>
       <p class="text-sm text-slate-500">अपराध रजिस्टर प्रबंधन प्रणाली - लॉगिन</p>
     </div>
@@ -39,7 +39,6 @@
       <div>
         <label class="text-sm font-semibold">पासवर्ड</label>
         <input id="loginPass" type="password" class="w-full mt-1 border rounded-lg px-3 py-2.5" placeholder="पासवर्ड" />
-        <!-- hint हटाया गया - सुरक्षा के लिए -->
       </div>
       <button onclick="doLogin()" class="w-full bg-[#1e3a8a] text-white py-3 rounded-xl font-semibold hover:bg-[#162c6b]">लॉगिन करें</button>
       <p id="loginErr" class="text-red-600 text-sm hidden text-center"></p>
@@ -48,7 +47,6 @@
 </div>
 
 <div class="flex min-h-screen">
-  <!-- SIDEBAR -->
   <aside class="w-72 bg-white border-r shadow-sm hidden md:flex flex-col">
     <div class="p-6 border-b">
       <h2 class="font-bold text-[#1e3a8a] text-lg leading-tight">थाना एट</h2>
@@ -60,7 +58,7 @@
       <button data-page="cases" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">📝 मुकदमा प्रबंधन</button>
       <button data-page="pending" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">⏳ लंबित आरोप पत्र / FR <span id="pendingBadge" class="ml-2 bg-red-500 text-white text-[11px] px-2 py-0.5 rounded-full">0</span></button>
       <button data-page="vivechak" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">👮 विवेचक प्रबंधन</button>
-      <button data-page="cloud" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">☁️ क्लाउड / समन्वय</button>
+      <button data-page="cloud" class="navBtn w-full text-left px-4 py-3 rounded-xl hover:bg-slate-100">☁ क्लाउड / समन्वय</button>
     </nav>
     <div class="p-4 border-t">
       <div class="text-xs text-slate-500">लॉगिन: <span id="sideUser" class="font-semibold text-slate-700"></span></div>
@@ -68,9 +66,7 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="flex-1">
-    <!-- TOP BAR MOBILE -->
     <div class="md:hidden bg-white border-b p-3 flex justify-between items-center sticky top-0 z-20">
       <div><p class="font-bold text-[#1e3a8a]">थाना एट, जालौन</p><p class="text-[11px] text-slate-500">अपराध रजिस्टर</p></div>
       <select id="mobNav" class="border rounded-lg px-2 py-1.5 text-sm">
@@ -78,10 +74,8 @@
       </select>
     </div>
 
-    <!-- DASHBOARD -->
     <section id="page-dashboard" class="page p-4 md:p-6">
       <div class="flex justify-between items-center mb-2"><h1 class="text-xl font-bold">डैशबोर्ड - थाना एट</h1><span id="syncStatus" class="text-xs bg-green-50 text-green-700 px-3 py-1 rounded-full">● लोकल मोड</span></div>
-      <!-- YEAR-WISE FILTER FOR DASHBOARD -->
       <div class="flex flex-wrap gap-2 mb-4 bg-white p-3 rounded-xl border shadow-sm items-center">
         <label class="text-xs font-semibold">वर्ष फिल्टर:</label>
         <select id="dashboardYearFilter" class="border rounded-lg px-3 py-2 text-sm">
@@ -112,7 +106,6 @@
       </div>
     </section>
 
-    <!-- CASES -->
     <section id="page-cases" class="page hidden p-4 md:p-6">
       <div class="flex justify-between items-center mb-4"><h1 class="text-xl font-bold">मुकदमा प्रबंधन</h1><div class="flex gap-2"><button onclick="exportCSV()" class="border px-4 py-2 rounded-xl text-sm bg-white">CSV डाउनलोड</button><button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm">Excel डाउनलोड</button><button onclick="exportJSON()" class="border px-4 py-2 rounded-xl text-sm bg-white">बैकअप JSON</button><button onclick="document.getElementById('importFile').click()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm">बैकअप रिस्टोर</button><input type="file" id="importFile" accept=".json" class="hidden" onchange="importBackup(event)"></div></div>
       <div class="bg-white rounded-2xl border shadow-sm p-5 mb-6">
@@ -155,11 +148,11 @@
         <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b">
             <tr>
               <th class="text-left py-2 px-2 w-12">#</th>
-              <th class="text-left py-2 px-2 cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('muAsNo')">मु0अ0सं0 <span id="sortMuIcon">↕️</span></th>
+              <th class="text-left py-2 px-2 cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('muAsNo')">मु0अ0सं0 <span id="sortMuIcon">↕</span></th>
               <th class="text-left">धारा</th>
               <th class="text-left">वादी / बनाम</th>
               <th class="text-left">विवेचक</th>
-              <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('dinankSuchna')">सूचना दिनांक <span id="sortDateIcon">↕️</span></th>
+              <th class="text-left cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('dinankSuchna')">सूचना दिनांक <span id="sortDateIcon">↕</span></th>
               <th class="text-left">आरोप पत्र/FR दिनांक</th>
               <th class="text-left">PDF</th>
               <th class="text-left">स्थिति</th>
@@ -169,7 +162,6 @@
       </div>
     </section>
 
-    <!-- PENDING -->
     <section id="page-pending" class="page hidden p-4 md:p-6">
       <h1 class="text-xl font-bold mb-1">लंबित आरोप पत्र / अंतिम रिपोर्ट - थाना एट</h1><p class="text-xs text-slate-500 mb-4">विवेचकवार और अवधिवार फिल्टर से पेंडिंग विवेचना देखें</p>
       <div class="bg-white rounded-2xl border shadow-sm p-4 mb-4">
@@ -185,7 +177,6 @@
         <div class="mt-3"><p class="text-[11px] font-semibold mb-2">विवेचकवार सार - क्लिक करके फिल्टर लगाएं:</p><div id="pendingVivechakSummary" class="flex flex-wrap gap-2"></div></div>
       </div>
       <div class="bg-white rounded-2xl border shadow-sm p-4"><div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b"><tr><th class="text-left py-2">मु0अ0सं0</th><th class="text-left">विवेचक</th><th class="text-left">वादी / बनाम</th><th class="text-left">सूचना दिनांक</th><th class="text-left">लंबित दिन</th><th>निस्तारण</th></tr></thead><tbody id="pendingTbody"></tbody></table></div><p id="pendingEmpty" class="hidden text-center text-sm text-slate-500 py-10">इस फिल्टर में कोई लंबित विवेचना नहीं मिली</p></div>
-      <!-- VIVECHAK-WISE COMPLETE PENDING DISPLAY -->
       <div class="bg-white rounded-2xl border shadow-sm p-4 mt-4">
         <h3 class="font-semibold text-[#1e3a8a] mb-2">👮 विवेचकवार सम्पूर्ण लम्बित अभियोग (वर्षवार फ़िल्टर सहित)</h3>
         <p class="text-[11px] text-slate-500 mb-3">नीचे हर विवेचक के पास कुल कितने लम्बित केस हैं, और उनके मु0अ0सं0 की पूरी सूची दिख रही है। डैशबोर्ड वर्ष फिल्टर से यह भी फ़िल्टर होगा।</p>
@@ -198,7 +189,6 @@
       </div>
     </section>
 
-    <!-- VIVECHAK MANAGEMENT -->
     <section id="page-vivechak" class="page hidden p-4 md:p-6">
       <h1 class="text-xl font-bold mb-1">विवेचक प्रबंधन - थाना एट, जालौन</h1><p class="text-xs text-slate-500 mb-4">मैन्युअली विवेचकों की लिस्ट भरें, यही लिस्ट पूरे ऐप में उपयोग होगी</p>
       <div class="grid md:grid-cols-3 gap-4">
@@ -237,7 +227,6 @@
       </div>
     </section>
 
-    <!-- CLOUD -->
     <section id="page-cloud" class="page hidden p-4 md:p-6">
       <h1 class="text-xl font-bold mb-1">क्लाउड समन्वय - थाना एट</h1><p class="text-xs text-slate-500 mb-4">सबका डेटा एक जगह - Google Sheet या Firebase से जोड़ें</p>
       <div class="grid md:grid-cols-2 gap-4">
@@ -262,7 +251,6 @@ function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var s=ss.getShee
             <button onclick="saveFirebase()" class="mt-3 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">Firebase सेव करें</button>
             <button onclick="testFirebase()" class="mt-3 ml-2 border px-4 py-2 rounded-lg text-sm">टेस्ट</button>
             <p id="fbMsg" class="text-xs mt-2"></p>
-            <!-- FINAL SECURE SUBMIT -->
             <div class="mt-6 p-4 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl text-white">
               <h4 class="font-bold text-sm">🔒 Final Secure Submit</h4>
               <p class="text-[11px] mt-1 opacity-90">सब कुछ चेक करने के बाद यहाँ क्लिक करें। सभी केस और विवेचक Firebase पर स्थायी रूप से सुरक्षित हो जाएंगे। दोबारा खोलने पर यही सुरक्षित डेटा दिखेगा।</p>
@@ -295,10 +283,9 @@ function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var s=ss.getShee
                 <p id="vivechakPassMsg" class="text-[11px] text-green-700 mt-2"></p>
               </div>
             </div>
+            <p class="text-[10px] text-blue-600 mt-3">✅ नया: अब पासवर्ड बदलने पर Firebase पर भी सेव होगा, तो App और Website दोनों जगह वही नया पासवर्ड चलेगा।</p>
           </div>
         </div>
-
-          <!-- EXCEL / CSV IMPORT -->
           <div class="bg-white rounded-2xl border-2 border-dashed border-blue-300 shadow-sm p-5 mt-4 bg-blue-50/30">
             <h3 class="font-semibold text-[#1e3a8a]">📥 पुराना डेटा इम्पोर्ट (Excel / CSV)</h3>
             <p class="text-[11px] text-slate-600 mt-1">पुरानी Excel/CSV से डेटा इम्पोर्ट करें, फिर Final Submit से सुरक्षित करें।</p>
@@ -322,13 +309,9 @@ function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var s=ss.getShee
   </main>
 </div>
 
-<!-- Nistaran Modal -->
 <div id="nistaranModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-40 p-4"><div class="bg-white rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-auto"><h3 class="font-semibold mb-3">निस्तारण करें - आरोप पत्र / अंतिम रिपोर्ट</h3><p id="nistaranMu" class="text-sm text-slate-600 mb-3"></p><label class="text-xs font-semibold">स्थिति चुनें</label><select id="nistaranStatus" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-3"><option>आरोप पत्र</option><option>अंतिम रिपोर्ट</option><option>खात्मा</option></select><label class="text-xs font-semibold">दिनांक</label><input id="nistaranDate" type="date" class="w-full border rounded-lg px-3 py-2.5 mt-1 mb-3"><div class="bg-green-50/50 border border-dashed border-green-200 rounded-xl p-3 mb-4"><label class="text-xs font-semibold text-green-800">📄 आरोप पत्र / अंतिम रिपोर्ट PDF अपलोड</label><input id="f_chargePdf" type="file" accept="application/pdf" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm"><p id="chargePdfName" class="text-[11px] text-slate-600 mt-1"></p></div><div class="flex gap-2"><button onclick="saveNistaran()" class="bg-[#1e3a8a] text-white px-5 py-2 rounded-xl text-sm">सेव</button><button onclick="closeNistaran()" class="border px-5 py-2 rounded-xl text-sm">रद्द</button></div></div></div>
 
 <script>
-
-
-// ===== FINAL SECURE - NO AUTO DATA + PASSWORD CHANGE + FINAL SUBMIT =====
 const DEFAULT_FB_CONFIG = {
   "apiKey": "AIzaSyBa0OorIRQCiu-mLncAK2_tCXqqy6IeYxU",
   "authDomain": "ait-jalaun-thana.firebaseapp.com",
@@ -339,13 +322,12 @@ const DEFAULT_FB_CONFIG = {
 };
 const DEFAULT_FB_COLLECTION = "ait_jalaun_cases";
 const DEFAULT_VIVECHAK_COLLECTION = "ait_jalaun_vivechaks";
+const DEFAULT_SETTINGS_COLLECTION = "ait_jalaun_settings";
 const LS_CASES='up_thana_ait_cases', LS_VIVECHAK='ait_jalaun_vivechak_list', LS_CLOUD='ait_cloud_url', LS_AUTO='ait_auto_sync', LS_AUTH='ait_auth', LS_THANA='ait_thana_info', LS_FB='ait_fb_config', LS_ADMIN_PASS='ait_admin_pass', LS_VIVECHAK_PASS='ait_vivechak_pass', LS_FINAL='ait_final_secure';
 function getAdminPass(){return localStorage.getItem(LS_ADMIN_PASS)||'thana@123';}
 function getVivechakPass(){return localStorage.getItem(LS_VIVECHAK_PASS)||'1234';}
 let cases=[], vivechaks=[], editMu=null, editVivechakId=null, nistaranMuNo=null;
-
 let dashboardYearFilter='all';
-
 let casesSortField='muAsNo';
 let casesSortOrder='asc';
 function sortCasesBy(field){
@@ -359,23 +341,18 @@ function sortCasesBy(field){
   const o=document.getElementById('casesSortOrder'); if(o) o.value=casesSortOrder;
   renderCasesTable();
 }
-
 let dashboardVivechakFilter='all';
 function getCaseYear(c){
   const tryParse = (s)=>{
     if(!s) return null;
     s=String(s).trim();
     if(s===''||s==='उपलब्ध नहीं') return null;
-    // YYYY-MM-DD
     let m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if(m) return m[1];
-    // DD/MM/YYYY
     m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if(m) return m[3];
-    // DD-MM-YYYY or DD.MM.YYYY
     m=s.match(/^(\d{1,2})[\-\.](\d{1,2})[\-\.](\d{4})$/);
     if(m) return m[3];
-    // Fallback Date parsing (for ISO or other)
     const d=new Date(s);
     if(!isNaN(d.getTime()) && d.getFullYear()>1900) return String(d.getFullYear());
     return null;
@@ -383,15 +360,12 @@ function getCaseYear(c){
   let y = tryParse(c.dinankSuchna) || tryParse(c.dinankGhatna) || tryParse(c.aaropPatraDinank);
   if(y) return y;
   const mu = String(c.muAsNo||'').trim();
-  // Extract year from muAsNo like 05/2026, 106/2025, 01/2006
   let m = mu.match(/\/(\d{4})$/);
   if(m) return m[1];
   m = mu.match(/(20\d{2}|19\d{2})/);
   if(m) return m[1] || m[0];
   return 'Unknown';
 }
-
-
 function excelSerialToISO(serial){
   const utc_days = Math.floor(serial - 25569);
   const utc_value = utc_days * 86400;
@@ -420,8 +394,6 @@ function formatDateForExport(iso){
   if(/^\d{4}-\d{2}-\d{2}$/.test(iso)){ const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
   return iso;
 }
-
-
 const LS_PADS='ait_custom_pads';
 function loadCustomPads(){
   try{
@@ -448,14 +420,12 @@ function addCustomPad(){
   if(!custom.includes(val)){ custom.push(val); localStorage.setItem(LS_PADS, JSON.stringify(custom)); }
   alert(`'${val}' पद लिस्ट में जोड़ दिया गया`);
 }
-
 function getAvailableYears(){
   const ys=new Set();
   cases.forEach(c=>{
     const y=getCaseYear(c);
     if(y && y!=='Unknown' && /^\d{4}$/.test(y)) ys.add(y);
   });
-  // Fallback: extract any year from muAsNo and dates if set empty
   if(ys.size===0 && cases.length>0){
     cases.forEach(c=>{
       const mu=String(c.muAsNo||'');
@@ -466,16 +436,13 @@ function getAvailableYears(){
     });
   }
   let arr=Array.from(ys).filter(y=>/^\d{4}$/.test(y)).sort((a,b)=>parseInt(b)-parseInt(a));
-  // If still empty, add current year and last 5 years as fallback so dropdown never empty
   if(arr.length===0){
     const cur=new Date().getFullYear();
     for(let y=cur; y>=cur-10; y--) arr.push(String(y));
   }
   return arr;
 }
-
-
-
+let tempFirPdfData=null, tempFirPdfName='', tempChargePdfData=null, tempChargePdfName='';
 function setupPdfInputs(){
   document.getElementById('f_firPdf')?.addEventListener('change', e=>{
     const file=e.target.files[0]; if(!file) return;
@@ -502,7 +469,6 @@ function setupPdfInputs(){
     reader.readAsDataURL(file);
   });
 }
-
 function viewPdf(dataUrl, name){
   if(!dataUrl){ alert('PDF नहीं है'); return; }
   try{
@@ -550,7 +516,6 @@ function viewPdfByMuNo(muNo, type){
   if(!data){ alert(type==='fir' ? 'FIR PDF नहीं है' : 'आरोप पत्र PDF नहीं है'); return; }
   viewPdf(data, name);
 }
-
 function clearPdfInputs(){
   tempFirPdfData=null; tempFirPdfName=''; tempChargePdfData=null; tempChargePdfName='';
   const f1=document.getElementById('f_firPdf'); if(f1) f1.value='';
@@ -558,28 +523,18 @@ function clearPdfInputs(){
   const n1=document.getElementById('firPdfName'); if(n1) n1.textContent='';
   const n2=document.getElementById('chargePdfName'); if(n2) n2.textContent='';
 }
-
 function populateDashboardFilters(){
   const ys=document.getElementById('dashboardYearFilter');
   const vs=document.getElementById('dashboardVivechakFilter');
   if(!ys||!vs) return;
   const years=getAvailableYears();
   const curY=ys.value;
-  // Keep existing selection if possible
   ys.innerHTML='<option value="all">सभी वर्ष</option>'+years.map(y=>`<option value="${y}">${y}</option>`).join('');
   if(curY && (curY==='all' || years.includes(curY) || curY==='')){ ys.value=curY; }
-  // Debug info
-  console.log('populateDashboardFilters years:', years, 'cases:', cases.length);
   const curV=vs.value;
   vs.innerHTML='<option value="all">सभी विवेचक</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.naam}</option>`).join('');
   if(curV) vs.value=curV;
-  // Update info text if years empty
-  const info=document.getElementById('dashboardFilterInfo');
-  if(info && years.length===0){
-    info.textContent = `कुल ${cases.length} केस, वर्ष नहीं मिला - muAsNo: ${cases[0]?cases[0].muAsNo:''}`;
-  }
 }
-
 function getDashboardFilteredCases(){
   let list=cases;
   const u=getCurrentUser();
@@ -591,15 +546,10 @@ function getDashboardFilteredCases(){
 function clearDashboardFilters(){
   dashboardYearFilter='all';
   dashboardVivechakFilter='all';
-  const y=
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter'); if(y) y.value='all';
+  const y=document.getElementById('dashboardYearFilter'); if(y) y.value='all';
   const v=document.getElementById('dashboardVivechakFilter'); if(v) v.value='all';
   renderAll();
 }
-
 let currentDetailVivechak = '';
 function openInvestigatorDetail(name){
   currentDetailVivechak = name;
@@ -633,8 +583,6 @@ function openInvestigatorDetail(name){
 function closeInvestigatorDetail(){ const m=document.getElementById('investigatorDetailModal'); if(m){ m.classList.add('hidden'); m.classList.remove('flex'); } document.body.style.overflow=''; currentDetailVivechak=''; }
 function exportInvestigatorPending(){ if(!currentDetailVivechak) return; let list=cases.filter(c=>c.aaropPatraStatus==='लंबित'); if(currentDetailVivechak==='अज्ञात'){ list=list.filter(c=>!c.vivechak); } else { list=list.filter(c=>c.vivechak===currentDetailVivechak); } if(dashboardYearFilter!=='all') list=list.filter(c=>getCaseYear(c)===dashboardYearFilter); let csv='मु0अ0सं0,धारा,वादी,बनाम,विवेचक,सूचना,लंबित दिन\n'; const today=new Date(); list.forEach(c=>{ const days=Math.floor((today-new Date(c.dinankSuchna||today))/86400000); csv+=`"${c.muAsNo}","${c.dhara}","${c.wadi}","${c.banam}","${c.vivechak}","${c.dinankSuchna}","${days}"\n`; }); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=currentDetailVivechak+'_लंबित_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); }
 function setVivechakFilterAndGo(name){ openInvestigatorDetail(name); }
-
-
 function renderInvestigatorWisePending(){
   const tb=document.getElementById('investigatorWiseTbody'); if(!tb) return;
   let pend=cases.filter(c=>c.aaropPatraStatus==='लंबित');
@@ -649,11 +597,7 @@ function renderInvestigatorWisePending(){
   }).join('');
   tb.innerHTML=rows||'<tr><td colspan="4" class="py-6 text-center text-slate-400">कोई लम्बित नहीं</td></tr>';
 }
-
-
 let fbApp=null, fbDb=null;
-const defaultVivechaks = [];
-const sampleCases = [];
 function loadAll(){
   let storedCases=JSON.parse(localStorage.getItem(LS_CASES)||'null');
   cases=(storedCases&&storedCases.length>=0)?storedCases:[];
@@ -668,37 +612,13 @@ function loadAll(){
   }catch(e){}
   try{const thana=JSON.parse(localStorage.getItem(LS_THANA)||'null');if(thana){const a=document.getElementById('setThana');if(a)a.value=thana.thanaName;const b=document.getElementById('setDistrict');if(b)b.value=thana.district;}}catch(e){}
   refreshVivechakSelects(); loadCustomPads(); setupPdfInputs(); populateDashboardFilters(); renderAll(); try{updatePassInfo();}catch(e){}
-  setTimeout(()=>{try{if(initFirebase(false)){const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● Firebase चालू';ss.className='text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full';}loadFromFirebase();loadVivechaksFromFirebase();const finfo=document.getElementById('finalSecureInfo');const ftime=localStorage.getItem(LS_FINAL);if(finfo&&ftime){finfo.textContent='✅ अंतिम बार सुरक्षित: '+new Date(ftime).toLocaleString();}}else{const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● लोकल मोड';ss.className='text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full';}}}catch(e){}},800);
+  setTimeout(()=>{try{if(initFirebase(false)){const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● Firebase चालू';ss.className='text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full';}loadFromFirebase();loadVivechaksFromFirebase();loadPasswordsFromFirebase();const finfo=document.getElementById('finalSecureInfo');const ftime=localStorage.getItem(LS_FINAL);if(finfo&&ftime){finfo.textContent='✅ अंतिम बार सुरक्षित: '+new Date(ftime).toLocaleString();}}else{const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● लोकल मोड';ss.className='text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full';}}}catch(e){}},800);
 }
 function saveCases(){localStorage.setItem(LS_CASES,JSON.stringify(cases));try{if(document.getElementById('autoSync')?.checked)syncToCloud();}catch(e){}renderAll();}
 function saveVivechaks(){localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}
 function refreshVivechakSelects(){
   const el1=document.getElementById('f_vivechak'); if(el1){ if(vivechaks.length>0) el1.innerHTML='<option value="">-- चुनें --</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.pad} ${v.naam}</option>`).join(''); else el1.innerHTML='<option value="">पहले विवेचक जोड़ें</option>'; }
-  const el2=
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-document.getElementById('filterVivechak'); if(el2){ if(vivechaks.length>0) el2.innerHTML='<option value="all">सभी विवेचक</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.naam}</option>`).join(''); else el2.innerHTML='<option value="all">कोई विवेचक नहीं</option>'; }
+  const el2=document.getElementById('filterVivechak'); if(el2){ if(vivechaks.length>0) el2.innerHTML='<option value="all">सभी विवेचक</option>'+vivechaks.map(v=>`<option value="${v.naam}">${v.naam}</option>`).join(''); else el2.innerHTML='<option value="all">कोई विवेचक नहीं</option>'; }
   const el3=document.getElementById('loginVivechakSelect'); if(el3){ if(vivechaks.length>0) el3.innerHTML=vivechaks.map(v=>`<option value="${v.naam}">${v.pad} ${v.naam}</option>`).join(''); else el3.innerHTML='<option value="">पहले Admin से विवेचक जोड़ें</option>'; }
 }
 function renderAll(){renderStats();renderCasesTable();renderPending();renderVivechakTable();renderDashboard();updateBadge();renderInvestigatorWisePending();populateDashboardFilters();}
@@ -712,8 +632,6 @@ function renderStats(){
   const d=document.getElementById('statFR');if(d)d.textContent=list.filter(c=>['अंतिम रिपोर्ट','खात्मा'].includes(c.aaropPatraStatus)).length;
   const info=document.getElementById('dashboardFilterInfo'); if(info){ let t=''; if(dashboardYearFilter!=='all') t+=`वर्ष:${dashboardYearFilter} `; if(dashboardVivechakFilter!=='all') t+=`विवेचक:${dashboardVivechakFilter}`; if(!t) t=`कुल ${cases.length} में से ${list.length}`; else t=`फिल्टर:${t}|${list.length}`; info.textContent=t; }
 }
-
-
 function renderDashboard(){const summary=document.getElementById('vivechakSummary');const list=getDashboardFilteredCases();if(vivechaks.length===0){if(summary)summary.innerHTML='<p class="text-sm text-amber-600 p-3 bg-amber-50 rounded-xl">कोई विवेचक नहीं। Admin से जोड़ें।</p>';}else{const map={};vivechaks.forEach(v=>map[v.naam]={total:0,pending:0});list.forEach(c=>{if(!map[c.vivechak])map[c.vivechak]={total:0,pending:0};map[c.vivechak].total++;if(c.aaropPatraStatus==='लंबित')map[c.vivechak].pending++;});if(summary)summary.innerHTML=Object.entries(map).map(([name,val])=>`<div class="flex justify-between items-center border rounded-xl px-4 py-3"><div><p class="font-semibold text-sm">${name}</p><p class="text-[11px] text-slate-500">कुल ${val.total} | लंबित ${val.pending}</p></div><span class="bg-red-50 text-red-700 text-xs px-3 py-1 rounded-full">${val.pending} लंबित</span></div>`).join('')||'<p class="text-sm text-slate-500">कोई डेटा नहीं</p>';}const recent=document.getElementById('recentCases');if(recent){if(list.length===0)recent.innerHTML='<p class="text-xs text-slate-400">कोई केस नहीं</p>';else recent.innerHTML=list.slice(0,5).map(c=>`<div class="flex justify-between border-b pb-2"><div><p class="font-medium">${c.muAsNo} - ${c.dhara}</p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p></div><span class="text-[11px] ${c.aaropPatraStatus==='लंबित'?'text-red-600':'text-green-600'}">${c.aaropPatraStatus}</span></div>`).join('');}}
 function renderCasesTable(){
   const q=(document.getElementById('caseSearch')?.value||'').toLowerCase();
@@ -743,8 +661,8 @@ function renderCasesTable(){
     return 0;
   });
   const muIcon=document.getElementById('sortMuIcon'); const dateIcon=document.getElementById('sortDateIcon');
-  if(muIcon) muIcon.textContent = casesSortField==='muAsNo' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕️';
-  if(dateIcon) dateIcon.textContent = casesSortField==='dinankSuchna' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕️';
+  if(muIcon) muIcon.textContent = casesSortField==='muAsNo' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕';
+  if(dateIcon) dateIcon.textContent = casesSortField==='dinankSuchna' ? (casesSortOrder==='asc' ? '↑' : '↓') : '↕';
   const tb=document.getElementById('casesTbody'); if(!tb) return;
   if(list.length===0){
     tb.innerHTML=`<tr><td colspan="10" class="py-10 text-center text-slate-400">कोई डेटा नहीं।</td></tr>`; return;
@@ -757,81 +675,11 @@ function renderCasesTable(){
     return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td class="text-xs">${c.aaropPatraDinank?formatDateForExport(c.aaropPatraDinank):''}</td><td class="text-center">${pdfCell}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${safeMu}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${safeMu}')" class="text-red-600 text-xs">Del</button></td></tr>`;
   }).join('');
 }
-function renderPending(){const fv=
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-document.getElementById('filterVivechak')?.value||'all',fa=document.getElementById('filterAvadhi')?.value||'all',fb=document.getElementById('filterBase')?.value||'suchna',sort=document.getElementById('filterSort')?.value||'pending_desc',cf=document.getElementById('customFrom')?.value||'',ct=document.getElementById('customTo')?.value||'';let list=cases.filter(c=>c.aaropPatraStatus==='लंबित');const u=getCurrentUser();if(u&&u.role==='vivechak')list=list.filter(c=>c.vivechak===u.name);if(fv!=='all')list=list.filter(c=>c.vivechak===fv);const today=new Date();if(fa!=='all'&&fa!=='custom'){const days=parseInt(fa);const limit=new Date();if(fa==='today'){limit.setHours(0,0,0,0);}else{limit.setDate(today.getDate()-days);}list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});}if(fa==='custom'&&cf&&ct){const from=new Date(cf),to=new Date(ct);list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});}list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});const fi=document.getElementById('filterInfo');if(fi)fi.textContent=`कुल ${cases.filter(c=>c.aaropPatraStatus==='लंबित').length} में से ${list.length}`;const map={};cases.filter(c=>c.aaropPatraStatus==='लंबित').forEach(c=>{map[c.vivechak]=(map[c.vivechak]||0)+1;});const pvs=document.getElementById('pendingVivechakSummary');if(pvs)pvs.innerHTML=Object.entries(map).map(([n,cnt])=>`<button onclick="setVivechakFilter('${n}')" class="text-xs border px-3 py-1.5 rounded-full ${fv===n?'bg-blue-600 text-white':'bg-white'}">${n} <span class="ml-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">${cnt}</span></button>`).join('');const tbody=document.getElementById('pendingTbody');const empty=document.getElementById('pendingEmpty');if(!tbody)return;if(list.length===0){tbody.innerHTML='';if(empty)empty.classList.remove('hidden');}else{if(empty)empty.classList.add('hidden');tbody.innerHTML=list.map(c=>{const d=new Date(c.dinankSuchna||new Date());const days=Math.max(0,Math.floor((today-d)/86400000));return `<tr class="border-b"><td class="py-2 font-medium">${c.muAsNo}<div class="text-[11px] text-slate-500">${c.dhara}</div></td><td class="text-xs">${c.vivechak}</td><td class="text-xs"><div>${c.wadi}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam}</div></td><td class="text-xs">${c.dinankSuchna||''}</td><td><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">${days} दिन</span></td><td><button onclick="openNistaran('${c.muAsNo}')" class="bg-[#1e3a8a] text-white text-xs px-3 py-1.5 rounded-full">निस्तारण</button></td></tr>`;}).join('');}}
-function setVivechakFilter(name){const el=
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-document.getElementById('filterVivechak');if(el){el.value=name;renderPending();}}
-function clearFilters(){const a=
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-document.getElementById('filterVivechak');if(a)a.value='all';const b=document.getElementById('filterAvadhi');if(b)b.value='all';const c=document.getElementById('filterBase');if(c)c.value='suchna';const d=document.getElementById('filterSort');if(d)d.value='pending_desc';const e=document.getElementById('customFrom');if(e)e.value='';const f=document.getElementById('customTo');if(f)f.value='';const g=document.getElementById('customDateRow');if(g)g.classList.add('hidden');renderPending();}
+function renderPending(){
+  const fv=document.getElementById('filterVivechak')?.value||'all',fa=document.getElementById('filterAvadhi')?.value||'all',fb=document.getElementById('filterBase')?.value||'suchna',sort=document.getElementById('filterSort')?.value||'pending_desc',cf=document.getElementById('customFrom')?.value||'',ct=document.getElementById('customTo')?.value||'';let list=cases.filter(c=>c.aaropPatraStatus==='लंबित');const u=getCurrentUser();if(u&&u.role==='vivechak')list=list.filter(c=>c.vivechak===u.name);if(fv!=='all')list=list.filter(c=>c.vivechak===fv);const today=new Date();if(fa!=='all'&&fa!=='custom'){const days=parseInt(fa);const limit=new Date();if(fa==='today'){limit.setHours(0,0,0,0);}else{limit.setDate(today.getDate()-days);}list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});}if(fa==='custom'&&cf&&ct){const from=new Date(cf),to=new Date(ct);list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});}list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});const fi=document.getElementById('filterInfo');if(fi)fi.textContent=`कुल ${cases.filter(c=>c.aaropPatraStatus==='लंबित').length} में से ${list.length}`;const map={};cases.filter(c=>c.aaropPatraStatus==='लंबित').forEach(c=>{map[c.vivechak]=(map[c.vivechak]||0)+1;});const pvs=document.getElementById('pendingVivechakSummary');if(pvs)pvs.innerHTML=Object.entries(map).map(([n,cnt])=>`<button onclick="setVivechakFilter('${n}')" class="text-xs border px-3 py-1.5 rounded-full ${fv===n?'bg-blue-600 text-white':'bg-white'}">${n} <span class="ml-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full">${cnt}</span></button>`).join('');const tbody=document.getElementById('pendingTbody');const empty=document.getElementById('pendingEmpty');if(!tbody)return;if(list.length===0){tbody.innerHTML='';if(empty)empty.classList.remove('hidden');}else{if(empty)empty.classList.add('hidden');tbody.innerHTML=list.map(c=>{const d=new Date(c.dinankSuchna||new Date());const days=Math.max(0,Math.floor((today-d)/86400000));return `<tr class="border-b"><td class="py-2 font-medium">${c.muAsNo}<div class="text-[11px] text-slate-500">${c.dhara}</div></td><td class="text-xs">${c.vivechak}</td><td class="text-xs"><div>${c.wadi}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam}</div></td><td class="text-xs">${c.dinankSuchna||''}</td><td><span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">${days} दिन</span></td><td><button onclick="openNistaran('${c.muAsNo}')" class="bg-[#1e3a8a] text-white text-xs px-3 py-1.5 rounded-full">निस्तारण</button></td></tr>`;}).join('');}
+}
+function setVivechakFilter(name){const el=document.getElementById('filterVivechak');if(el){el.value=name;renderPending();}}
+function clearFilters(){const a=document.getElementById('filterVivechak');if(a)a.value='all';const b=document.getElementById('filterAvadhi');if(b)b.value='all';const c=document.getElementById('filterBase');if(c)c.value='suchna';const d=document.getElementById('filterSort');if(d)d.value='pending_desc';const e=document.getElementById('customFrom');if(e)e.value='';const f=document.getElementById('customTo');if(f)f.value='';const g=document.getElementById('customDateRow');if(g)g.classList.add('hidden');renderPending();}
 function updateBadge(){const el=document.getElementById('pendingBadge');if(el)el.textContent=cases.filter(c=>c.aaropPatraStatus==='लंबित').length;}
 document.getElementById('caseForm')?.addEventListener('submit',e=>{
   e.preventDefault();
@@ -915,7 +763,6 @@ function editVivechak(id){if(!isAdmin()){alert('केवल थानाध्�
 function delVivechak(id){if(!isAdmin()){alert('केवल थानाध्यक्ष');return;}if(!confirm('हटाना है?'))return;vivechaks=vivechaks.filter(v=>v.id!==id);saveVivechaks();try{if(fbDb){fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).doc(id).delete();}}catch(e){}}
 function resetVivechakForm(){const f=document.getElementById('vivechakForm');if(f)f.reset();editVivechakId=null;const t=document.getElementById('vivechakFormTitle');if(t)t.textContent='नया विवेचक जोड़ें';}
 function openNistaran(mu){
-  console.log('openNistaran', mu);
   nistaranMuNo=mu;
   const a=document.getElementById('nistaranMu');
   if(a) a.textContent='मु0अ0सं0: '+mu;
@@ -923,7 +770,6 @@ function openNistaran(mu){
   if(b) b.value=new Date().toISOString().slice(0,10);
   const m=document.getElementById('nistaranModal');
   if(m){ m.classList.remove('hidden'); m.classList.add('flex'); }
-  // Reset charge PDF temp
   tempChargePdfData=null; tempChargePdfName='';
   const f2=document.getElementById('f_chargePdf'); if(f2) f2.value='';
   const n2=document.getElementById('chargePdfName'); if(n2) n2.textContent='';
@@ -932,59 +778,34 @@ function closeNistaran(){
   const m=document.getElementById('nistaranModal');
   if(m){ m.classList.add('hidden'); m.classList.remove('flex'); }
   nistaranMuNo=null;
-  // Don't clear here, clear in save
 }
 function saveNistaran(){
-  console.log('saveNistaran called, muNo:', nistaranMuNo);
-  if(!nistaranMuNo){
-    alert('मु0अ0सं0 नहीं मिला');
-    return;
-  }
+  if(!nistaranMuNo){ alert('मु0अ0सं0 नहीं मिला'); return; }
   const stEl=document.getElementById('nistaranStatus');
   const dtEl=document.getElementById('nistaranDate');
-  if(!stEl || !dtEl){
-    alert('फॉर्म एलिमेंट नहीं मिला');
-    return;
-  }
+  if(!stEl || !dtEl){ alert('फॉर्म एलिमेंट नहीं मिला'); return; }
   const st=stEl.value;
   const dt=dtEl.value;
-  if(!dt){
-    alert('कृपया दिनांक चुनें');
-    return;
-  }
+  if(!dt){ alert('कृपया दिनांक चुनें'); return; }
   const idx=cases.findIndex(c=>c.muAsNo===nistaranMuNo);
-  if(idx<0){
-    alert('केस नहीं मिला: '+nistaranMuNo);
-    return;
-  }
-  console.log('Updating case', idx, st, dt);
+  if(idx<0){ alert('केस नहीं मिला: '+nistaranMuNo); return; }
   cases[idx].aaropPatraStatus=st;
   cases[idx].aaropPatraDinank=dt;
   cases[idx].updatedAt=Date.now();
   if(tempChargePdfData){
     cases[idx].chargeSheetPdfData=tempChargePdfData;
     cases[idx].chargeSheetPdfName=tempChargePdfName;
-    console.log('Charge PDF attached', tempChargePdfName);
   }
-  try{
-    saveCases();
-    console.log('saveCases success');
-  }catch(e){
-    console.error('saveCases failed', e);
-    // Try without PDFs if quota exceeded
+  try{ saveCases(); }catch(e){
     if(e.name==='QuotaExceededError' || String(e).includes('quota')){
-      alert('स्टोरेज फुल है, PDF के बिना सेव किया जा रहा है। पुरानी PDF हटाकर दोबारा कोशिश करें।');
-      // Remove PDFs to save space
+      alert('स्टोरेज फुल है, PDF के बिना सेव किया जा रहा है।');
       if(cases[idx].chargeSheetPdfData) delete cases[idx].chargeSheetPdfData;
       if(cases[idx].firPdfData) delete cases[idx].firPdfData;
       try{ saveCases(); }catch(e2){ alert('सेव फेल: '+e2.message); }
-    } else {
-      alert('सेव में एरर: '+e.message);
-    }
+    } else { alert('सेव में एरर: '+e.message); }
   }
   closeNistaran();
   clearPdfInputs();
-  // Refresh pending view
   if(typeof renderPending==='function') renderPending();
   alert('निस्तारण सेव हो गया: '+st+' - '+dt);
 }
@@ -992,30 +813,6 @@ function goPage(p){document.querySelectorAll('.page').forEach(s=>s.classList.add
 document.querySelectorAll('.navBtn').forEach(b=>b.addEventListener('click',()=>goPage(b.dataset.page)));
 document.getElementById('mobNav')?.addEventListener('change',e=>goPage(e.target.value));
 document.getElementById('loginRole')?.addEventListener('change',e=>{const w=document.getElementById('vivechakLoginSelectWrap'),aw=document.getElementById('adminNameWrap');if(e.target.value==='vivechak'){if(w)w.classList.remove('hidden');if(aw)aw.classList.add('hidden');}else{if(w)w.classList.add('hidden');if(aw)aw.classList.remove('hidden');}});
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
-
-
-document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
-document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
-
-document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll();});
-document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll();});
-
 document.getElementById('filterVivechak')?.addEventListener('change',renderPending);
 document.getElementById('filterAvadhi')?.addEventListener('change',e=>{const r=document.getElementById('customDateRow');if(!r)return;if(e.target.value==='custom')r.classList.remove('hidden');else r.classList.add('hidden');renderPending();});
 document.getElementById('filterBase')?.addEventListener('change',renderPending);
@@ -1024,11 +821,63 @@ document.getElementById('customFrom')?.addEventListener('change',renderPending);
 document.getElementById('customTo')?.addEventListener('change',renderPending);
 document.getElementById('caseSearch')?.addEventListener('input',renderCasesTable);
 document.getElementById('vivechakSearch')?.addEventListener('input',renderVivechakTable);
-// Auth + Password Change
-function doLogin(){const role=document.getElementById('loginRole').value,pass=document.getElementById('loginPass').value.trim();let name='';if(role==='admin'){name=document.getElementById('loginName').value.trim()||'थानाध्यक्ष';if(pass!==getAdminPass()){const er=document.getElementById('loginErr');if(er){er.textContent='गलत पासवर्ड: '+getAdminPass();er.classList.remove('hidden');}return;}}else{name=document.getElementById('loginVivechakSelect').value;if(!name||name.includes('कोई विवेचक')||name.includes('Admin से')){alert('पहले Admin से विवेचक जोड़ें');return;}if(pass!==getVivechakPass()){const er=document.getElementById('loginErr');if(er){er.textContent='गलत: '+getVivechakPass();er.classList.remove('hidden');}return;}}localStorage.setItem(LS_AUTH,JSON.stringify({role,name}));document.getElementById('loginOverlay').classList.add('hidden');const su=document.getElementById('sideUser');if(su)su.textContent=name+' ('+(role==='admin'?'Admin':'विवेचक')+')';loadAll();}
+document.getElementById('casesSortField')?.addEventListener('change', e=>{casesSortField=e.target.value; renderCasesTable();});
+document.getElementById('casesSortOrder')?.addEventListener('change', e=>{casesSortOrder=e.target.value; renderCasesTable();});
+document.getElementById('dashboardYearFilter')?.addEventListener('change', e=>{dashboardYearFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+document.getElementById('dashboardVivechakFilter')?.addEventListener('change', e=>{dashboardVivechakFilter=e.target.value; renderAll(); renderInvestigatorWisePending();});
+
+function doLogin(){const role=document.getElementById('loginRole').value,pass=document.getElementById('loginPass').value.trim();let name='';if(role==='admin'){name=document.getElementById('loginName').value.trim()||'थानाध्यक्ष';if(pass!==getAdminPass()){const er=document.getElementById('loginErr');if(er){er.textContent='गलत पासवर्ड';er.classList.remove('hidden');}return;}}else{name=document.getElementById('loginVivechakSelect').value;if(!name||name.includes('कोई विवेचक')||name.includes('Admin से')){alert('पहले Admin से विवेचक जोड़ें');return;}if(pass!==getVivechakPass()){const er=document.getElementById('loginErr');if(er){er.textContent='गलत पासवर्ड';er.classList.remove('hidden');}return;}}localStorage.setItem(LS_AUTH,JSON.stringify({role,name}));document.getElementById('loginOverlay').classList.add('hidden');const su=document.getElementById('sideUser');if(su)su.textContent=name+' ('+(role==='admin'?'Admin':'विवेचक')+')';loadAll();}
 function updatePassInfo(){const ap=getAdminPass();const vp=getVivechakPass();const el1=document.getElementById('currentPassInfo');if(el1)el1.textContent='वर्तमान - थानाध्यक्ष: '+ap+' | विवेचक: '+vp;}
-function changeAdminPassword(){const cur=document.getElementById('curAdminPass').value.trim();const np=document.getElementById('newAdminPass').value.trim();const cp=document.getElementById('confirmAdminPass').value.trim();if(cur!==getAdminPass()){alert('वर्तमान थानाध्यक्ष पासवर्ड गलत');return;}if(np.length<4){alert('नया पासवर्ड कम से कम 4 अक्षर');return;}if(np!==cp){alert('कन्फर्म मेल नहीं');return;}localStorage.setItem(LS_ADMIN_PASS,np);const m=document.getElementById('adminPassMsg');if(m)m.textContent='बदल गया ✓ नया: '+np;document.getElementById('curAdminPass').value='';document.getElementById('newAdminPass').value='';document.getElementById('confirmAdminPass').value='';updatePassInfo();}
-function changeVivechakPassword(){const cur=document.getElementById('curVivechakPass').value.trim();const np=document.getElementById('newVivechakPass').value.trim();const cp=document.getElementById('confirmVivechakPass').value.trim();if(cur!==getVivechakPass()){alert('वर्तमान विवेचक पासवर्ड गलत');return;}if(np.length<4){alert('कम से कम 4 अक्षर');return;}if(np!==cp){alert('कन्फर्म मेल नहीं');return;}localStorage.setItem(LS_VIVECHAK_PASS,np);const m=document.getElementById('vivechakPassMsg');if(m)m.textContent='बदल गया ✓ नया: '+np;document.getElementById('curVivechakPass').value='';document.getElementById('newVivechakPass').value='';document.getElementById('confirmVivechakPass').value='';updatePassInfo();}
+function savePasswordsToFirebase(){
+  try{
+    if(!fbDb && !initFirebase(false)) return;
+    fbDb.collection(DEFAULT_SETTINGS_COLLECTION).doc("passwords").set({
+      adminPass: localStorage.getItem(LS_ADMIN_PASS) || 'thana@123',
+      vivechakPass: localStorage.getItem(LS_VIVECHAK_PASS) || '1234',
+      updatedAt: Date.now()
+    }, {merge:true});
+  }catch(e){ console.log('savePasswordsToFirebase err', e); }
+}
+function loadPasswordsFromFirebase(){
+  try{
+    if(!initFirebase(false)) return;
+    if(window._fbPassUnsub) window._fbPassUnsub();
+    window._fbPassUnsub = fbDb.collection(DEFAULT_SETTINGS_COLLECTION).doc("passwords").onSnapshot(doc=>{
+      if(doc.exists){
+        const d=doc.data();
+        if(d.adminPass){ localStorage.setItem(LS_ADMIN_PASS, d.adminPass); }
+        if(d.vivechakPass){ localStorage.setItem(LS_VIVECHAK_PASS, d.vivechakPass); }
+        updatePassInfo();
+      }
+    }, err=>{ console.log('loadPasswords err', err); });
+  }catch(e){ console.log('loadPasswordsFromFirebase err', e); }
+}
+function changeAdminPassword(){
+  const cur=document.getElementById('curAdminPass').value.trim();
+  const np=document.getElementById('newAdminPass').value.trim();
+  const cp=document.getElementById('confirmAdminPass').value.trim();
+  if(cur!==getAdminPass()){alert('वर्तमान थानाध्यक्ष पासवर्ड गलत');return;}
+  if(np.length<4){alert('नया पासवर्ड कम से कम 4 अक्षर');return;}
+  if(np!==cp){alert('कन्फर्म मेल नहीं');return;}
+  localStorage.setItem(LS_ADMIN_PASS,np);
+  savePasswordsToFirebase();
+  const m=document.getElementById('adminPassMsg');if(m)m.textContent='बदल गया ✓ नया: '+np+' (App और Website दोनों पर लागू)';
+  document.getElementById('curAdminPass').value='';document.getElementById('newAdminPass').value='';document.getElementById('confirmAdminPass').value='';
+  updatePassInfo();
+}
+function changeVivechakPassword(){
+  const cur=document.getElementById('curVivechakPass').value.trim();
+  const np=document.getElementById('newVivechakPass').value.trim();
+  const cp=document.getElementById('confirmVivechakPass').value.trim();
+  if(cur!==getVivechakPass()){alert('वर्तमान विवेचक पासवर्ड गलत');return;}
+  if(np.length<4){alert('कम से कम 4 अक्षर');return;}
+  if(np!==cp){alert('कन्फर्म मेल नहीं');return;}
+  localStorage.setItem(LS_VIVECHAK_PASS,np);
+  savePasswordsToFirebase();
+  const m=document.getElementById('vivechakPassMsg');if(m)m.textContent='बदल गया ✓ नया: '+np+' (App और Website दोनों पर लागू)';
+  document.getElementById('curVivechakPass').value='';document.getElementById('newVivechakPass').value='';document.getElementById('confirmVivechakPass').value='';
+  updatePassInfo();
+}
 function doLogout(){localStorage.removeItem(LS_AUTH);location.reload();}
 function saveThanaInfo(){const o={thanaName:document.getElementById('setThana').value,district:document.getElementById('setDistrict').value,state:'उत्तर प्रदेश'};localStorage.setItem(LS_THANA,JSON.stringify(o));alert('सेव');}
 function copyCode(){try{navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent);alert('कॉपी');}catch(e){}}
@@ -1047,17 +896,16 @@ function syncVivechakToFirebase(v){try{if(!fbDb&&!initFirebase(false))return;fbD
 function syncAllVivechaksToFirebase(){if(!initFirebase(false))return false;vivechaks.forEach(v=>syncVivechakToFirebase(v));return true;}
 function finalSecureSubmit(){
   if(cases.length===0&&vivechaks.length===0){alert('पहले 1 विवेचक और 1 केस जोड़ें');return;}
-  if(!confirm('क्या आप '+cases.length+' केस और '+vivechaks.length+' विवेचक को FINAL SECURE करना चाहते हैं?\\nदोबारा खोलने पर यही डेटा दिखेगा।'))return;
+  if(!confirm('क्या आप '+cases.length+' केस और '+vivechaks.length+' विवेचक को FINAL SECURE करना चाहते हैं?\nदोबारा खोलने पर यही डेटा दिखेगा।'))return;
   const btn=document.getElementById('finalSubmitBtn');const info=document.getElementById('finalSecureInfo');const msg=document.getElementById('fbMsg');
   if(btn){btn.textContent='⏳ सुरक्षित किया जा रहा है...';btn.disabled=true;}
   if(!initFirebase(false)){alert('Firebase नहीं जुड़ा');if(btn){btn.disabled=false;btn.textContent='✅ Final Submit';}return;}
-  syncAllToFirebase();syncAllVivechaksToFirebase();
+  syncAllToFirebase();syncAllVivechaksToFirebase();savePasswordsToFirebase();
   setTimeout(()=>{const now=new Date().toISOString();localStorage.setItem(LS_FINAL,now);if(btn){btn.textContent='✅ सुरक्षित हो गया!';btn.className='mt-3 w-full bg-green-500 text-white py-3 rounded-xl font-bold';btn.disabled=false;}if(info){info.textContent='✅ अंतिम बार: '+new Date(now).toLocaleString();}if(msg){msg.classList.remove('hidden');msg.className='text-sm mt-3 p-3 rounded-xl bg-green-50 text-green-800 border-2 border-green-300 font-semibold';msg.innerHTML='🔒 <b>डेटा सुरक्षित!</b> '+cases.length+' केस, '+vivechaks.length+' विवेचक सेव।';}const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+cases.length+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}alert('✅ सुरक्षित! अब दोबारा खोलने पर यही दिखेगा।');},1500);
 }
 function loadFromFirebase(){if(!initFirebase(false))return;const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;try{if(window._fbUnsub)window._fbUnsub();}catch(e){}window._fbUnsub=fbDb.collection(coll).onSnapshot(snap=>{if(snap.empty){if(cases.length===0)renderAll();return;}const map={};snap.forEach(doc=>{const d=doc.data();if(d&&d.muAsNo)map[d.muAsNo]=d;});try{const local=JSON.parse(localStorage.getItem(LS_CASES)||'[]');local.forEach(c=>{if(c&&c.muAsNo&&(!map[c.muAsNo]||(c.updatedAt||0)>(map[c.muAsNo].updatedAt||0)))map[c.muAsNo]=c;});}catch(e){}cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));renderAll();const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+snap.size+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}},err=>{const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent='एरर: '+err.message;}});}
 function loadVivechaksFromFirebase(){if(!initFirebase(false))return;try{if(window._fbVUnsub)window._fbVUnsub();}catch(e){}window._fbVUnsub=fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).onSnapshot(snap=>{if(snap.empty){return;}const list=[];snap.forEach(doc=>{const d=doc.data();if(d&&d.id&&d.naam)list.push(d);});if(list.length>0){vivechaks=list;localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}});}
 
-// ===== EXCEL / CSV IMPORT =====
 function downloadImportTemplate(){
   const headers=["मु0अ0सं0","धारा","दिनांक घटना","दिनांक सूचना","घटना स्थल","वादी","बनाम","विवेचक","विवरण","स्थिति","दिनांक"];
   const sample=[["045/2024","103(1) BNS","2024-05-10","2024-05-11","ग्राम एट","रामकुमार","अज्ञात","SI रामप्रकाश यादव","जमीनी विवाद","लंबित",""],["102/2024","85 BNS","2024-06-01","2024-06-02","कस्बा एट","सीमा देवी","सुनील","SI सुनील कुमार","दहेज","आरोप पत्र","2024-07-15"]];
@@ -1128,11 +976,10 @@ function processImportRows(rows){
   if(toAdd.length>0){vivechaks=[...vivechaks,...toAdd];localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}
   localStorage.setItem(LS_CASES,JSON.stringify(cases));
   refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();
-  if(msg)msg.textContent=`✅ ${add} नए, ${upd} अपडेट, ${toAdd.length} विवेचक | 46068 जैसे दिनांक सही बदले गए`;
+  if(msg)msg.textContent=`✅ ${add} नए, ${upd} अपडेट, ${toAdd.length} विवेचक`;
   if(pv){pv.classList.remove('hidden');pv.innerHTML=`<b>प्रीव्यू:</b><br>`+cases.slice(-5).map(c=>`${c.muAsNo} | ${formatDateForExport(c.dinankSuchna)}`).join('<br>');}
-  alert(`इम्पोर्ट सफल! ${add} नए, ${upd} अपडेट\n46068 जैसे Excel नंबर अब DD/MM/YYYY में बदल गए`);
+  alert(`इम्पोर्ट सफल! ${add} नए, ${upd} अपडेट`);
 }
-
 function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
 function exportCSV(){
   let csv='मु0अ0सं0,धारा,घटना,सूचना,स्थल,वादी,बनाम,विवेचक,विवरण,स्थिति,दिनांक\n';
@@ -1157,14 +1004,10 @@ function exportExcel(){
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Cases");
   XLSX.writeFile(wb, 'Ait_Cases_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
-
 function exportJSON(){const blob=new Blob([JSON.stringify({thana:'थाना एट',vivechaks,cases,secureAt:localStorage.getItem(LS_FINAL)},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ait_Secure_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 (function(){const auth=localStorage.getItem(LS_AUTH);if(auth){try{document.getElementById('loginOverlay').classList.add('hidden');const u=JSON.parse(auth);const su=document.getElementById('sideUser');if(su)su.textContent=u.name+' ('+(u.role==='admin'?'Admin':'विवेचक')+')';}catch(e){}loadAll();}else{let v=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');if(!v)v=[];vivechaks=v;refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();}try{updatePassInfo();}catch(e){}})();
-
-
 </script>
 
-<!-- INVESTIGATOR DETAIL MODAL -->
 <div id="investigatorDetailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
   <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl">
     <div class="p-4 border-b flex justify-between items-center bg-blue-50 rounded-t-2xl">
