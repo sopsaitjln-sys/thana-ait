@@ -156,7 +156,14 @@ aside::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
             <input id="caseSearch" placeholder="खोजें: मु0अ0सं0, धारा, वादी, बनाम" class="border rounded-full px-4 py-2 text-sm w-56">
           </div>
         </div>
-        <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b">
+        <div class="flex flex-wrap gap-2 mb-3 text-[11px]">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-red-500 rounded-full"></span> लंबित</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> आरोप पत्र</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-blue-500 rounded-full"></span> अंतिम रिपोर्ट / FR</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-purple-500 rounded-full"></span> खात्मा</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-orange-500 rounded-full"></span> खारिज</span>
+      </div>
+      <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b">
             <tr>
               <th class="text-left py-2 px-2 w-12">#</th>
               <th class="text-left py-2 px-2 cursor-pointer hover:text-blue-600 select-none" onclick="sortCasesBy('muAsNo')">मु0अ0सं0 <span id="sortMuIcon">↕</span></th>
@@ -192,7 +199,14 @@ aside::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:10px}
           <h3 class="font-semibold text-sm">लंबित सूची - <span id="pendingCountInfo" class="text-slate-500">0</span></h3>
           <button onclick="exportPendingExcel()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-1">📥 Excel Export</button>
         </div>
-        <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b bg-slate-50">
+        <div class="flex flex-wrap gap-2 mb-3 text-[11px] p-2 bg-slate-50 rounded-xl">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-red-500 rounded-full"></span> लंबित</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full"></span> आरोप पत्र</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-blue-500 rounded-full"></span> अंतिम रिपोर्ट / FR</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-purple-500 rounded-full"></span> खात्मा</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 bg-orange-500 rounded-full"></span> खारिज</span>
+      </div>
+      <div class="overflow-auto"><table class="w-full text-sm"><thead class="text-xs text-slate-500 border-b bg-slate-50">
           <tr>
             <th class="text-left py-2 px-2 w-12">क्र0</th>
             <th class="text-left py-2 cursor-pointer hover:text-blue-600 select-none" onclick="sortPendingBy('muAsNo')">मु0अ0सं0 <span id="sortPendMuIcon">↕</span></th>
@@ -724,7 +738,7 @@ function renderDashboard(){
         if(kb.year!==ka.year) return kb.year - ka.year;
         return kb.num - ka.num;
       });
-      recentDisposed.innerHTML=sortedDisposed.slice(0,5).map((c,idx)=>`<div class="flex justify-between border-b pb-2 gap-2"><div class="flex gap-2"><span class="bg-green-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shrink-0 mt-0.5">${idx+1}</span><div><p class="font-medium">${c.muAsNo} - ${c.dhara} <span class="text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full ml-1">${c.aaropPatraStatus}</span></p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p><div class="text-[10px] text-slate-400">${c.aaropPatraDinank?('निस्तारण: '+formatDateForExport(c.aaropPatraDinank)) : ''} | ${c.vivechak||''}</div></div></div><span class="text-[11px] text-blue-600">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</span></div>`).join('');
+      recentDisposed.innerHTML=sortedDisposed.slice(0,5).map((c,idx)=>`<div class="flex justify-between border-b pb-2 gap-2"><div class="flex gap-2"><span class="bg-green-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shrink-0 mt-0.5">${idx+1}</span><div><p class="font-medium">${c.muAsNo} - ${c.dhara} <span class="${getStatusBadgeClass(c.aaropPatraStatus)} text-[10px] px-1.5 py-0.5 rounded-full ml-1">${c.aaropPatraStatus}</span></p><p class="text-[11px] text-slate-500">${c.wadi} बनाम ${c.banam}</p><div class="text-[10px] text-slate-400">${c.aaropPatraDinank?('निस्तारण: '+formatDateForExport(c.aaropPatraDinank)) : ''} | ${c.vivechak||''}</div></div></div><span class="text-[11px] text-blue-600">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</span></div>`).join('');
     }
   }
 }
@@ -773,7 +787,7 @@ function renderCasesTable(){
     const hasFir = c.firPdfData ? `<button onclick="viewPdfByMuNo('${safeMu}', 'fir')" class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full mr-1">FIR</button>` : '';
     const hasCharge = c.chargeSheetPdfData ? `<button onclick="viewPdfByMuNo('${safeMu}', 'charge')" class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">CS</button>` : '';
     const pdfCell = (hasFir||hasCharge) ? hasFir+hasCharge : '<span class="text-[10px] text-slate-400">-</span>';
-    return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td class="text-xs">${c.aaropPatraDinank?formatDateForExport(c.aaropPatraDinank):''}</td><td class="text-center">${pdfCell}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${c.aaropPatraStatus==='लंबित'?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${safeMu}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${safeMu}')" class="text-red-600 text-xs">Del</button></td></tr>`;
+    return `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-xs font-medium text-slate-600">${idx+1}</td><td class="py-2 px-2 font-medium">${c.muAsNo}</td><td>${c.dhara||''}</td><td><div class="text-xs">${c.wadi||''}</div><div class="text-[11px] text-slate-500">बनाम ${c.banam||''}</div></td><td class="text-xs">${c.vivechak||''}</td><td class="text-xs">${c.dinankSuchna?formatDateForExport(c.dinankSuchna):''}</td><td class="text-xs">${c.aaropPatraDinank?formatDateForExport(c.aaropPatraDinank):''}</td><td class="text-center">${pdfCell}</td><td><span class="text-[11px] px-2 py-1 rounded-full ${getStatusBadgeClass(c.aaropPatraStatus)}">${c.aaropPatraStatus||''}</span></td><td class="text-center"><button onclick="editCase('${safeMu}')" class="text-blue-600 text-xs mr-2">Edit</button><button onclick="delCase('${safeMu}')" class="text-red-600 text-xs">Del</button></td></tr>`;
   }).join('');
 }
 function renderPending(){
@@ -1228,6 +1242,29 @@ function processImportRows(rows){
   alert(`इम्पोर्ट सफल! ${add} नए, ${upd} अपडेट`);
 }
 function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
+
+function getStatusBadgeClass(status){
+  if(!status) return 'bg-slate-100 text-slate-600';
+  const s = status.toLowerCase();
+  if(s.includes('लंबित')) return 'bg-red-100 text-red-700 border border-red-200';
+  if(s.includes('आरोप')) return 'bg-green-100 text-green-700 border border-green-200';
+  if(s.includes('अंतिम')) return 'bg-blue-100 text-blue-700 border border-blue-200';
+  if(s.includes('खात्मा')) return 'bg-purple-100 text-purple-700 border border-purple-200';
+  if(s.includes('खारिज')) return 'bg-orange-100 text-orange-700 border border-orange-200';
+  if(s.includes('fr') || s.includes('एफ')) return 'bg-blue-100 text-blue-700 border border-blue-200';
+  return 'bg-slate-100 text-slate-600 border';
+}
+function getStatusDot(status){
+  if(!status) return 'bg-slate-400';
+  const s = status.toLowerCase();
+  if(s.includes('लंबित')) return 'bg-red-500';
+  if(s.includes('आरोप')) return 'bg-green-500';
+  if(s.includes('अंतिम')) return 'bg-blue-500';
+  if(s.includes('खात्मा')) return 'bg-purple-500';
+  if(s.includes('खारिज')) return 'bg-orange-500';
+  return 'bg-slate-400';
+}
+
 function getExcelSortKey(c){
   const mu = String(c.muAsNo||'').trim();
   const parts = mu.split('/');
