@@ -667,28 +667,6 @@ function saveCases(){
   }catch(e){}
   localStorage.setItem(LS_CASES,JSON.stringify(cases));
   try{if(document.getElementById('autoSync')?.checked)syncToCloud();}catch(e){}
-  // FIX: Always sync to Firebase so all devices get same data
-  try{
-    if(typeof syncAllToFirebase==='function' && typeof fbDb!=='undefined' && fbDb){
-      // sync only changed cases would be better, but sync all ensures consistency
-      // To avoid quota, sync last updated case if we track it
-      if(window._lastChangedCase){
-        syncCaseToFirebase(window._lastChangedCase);
-        window._lastChangedCase=null;
-      } else {
-        // fallback: sync all in background
-        if(!window._syncingAll){
-          window._syncingAll=true;
-          syncAllToFirebase();
-          setTimeout(()=>{window._syncingAll=false;},5000);
-        }
-      }
-    } else if(typeof initFirebase==='function'){
-      if(initFirebase(false) && typeof syncAllToFirebase==='function'){
-        syncAllToFirebase();
-      }
-    }
-  }catch(e){ console.log('FB sync error', e); }
   renderAll();
 }
 function saveVivechaks(){localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}
@@ -865,38 +843,68 @@ function sortPendingBy(field){
 }
 let lastPendingFilteredList = [];
 function exportPendingExcel(){
-  try{
-    const filterName = document.getElementById('filterVivechak')?.value || 'all';
-    let list = typeof lastPendingFilteredList!=='undefined' && lastPendingFilteredList ? lastPendingFilteredList : cases.filter(c=>c.aaropPatraStatus==='लंबित');
-    if(list.length===0){ alert('कोई लंबित डेटा नहीं'); return; }
-    const today = new Date();
-    const headers=["क्रम","मु0अ0सं0","धारा","वादी बनाम प्रतिवादी","विवेचक","सूचना तिथि","लंबित दिन","स्थिति"];
-    const data=[headers];
-    list.forEach((c,idx)=>{
-      const d=new Date(c.dinankSuchna||today);
-      const days=Math.max(0,Math.floor((today-d)/86400000));
-      data.push([idx+1, {v:c.muAsNo, t:'s'}, c.dhara||'', (c.wadi||'')+' बनाम '+(c.banam||''), c.vivechak||'', formatDateForExport(c.dinankSuchna), days, c.aaropPatraStatus||'']);
-    });
-    const ws=XLSX.utils.aoa_to_sheet(data);
-    ws['!cols']=[{wch:6},{wch:12},{wch:15},{wch:30},{wch:18},{wch:12},{wch:10},{wch:12}];
-    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Pending");
-    const fileName='Lambit_'+(filterName!=='all'?filterName+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx';
-    if(typeof Android!=='undefined' && typeof Android.saveExcel==='function'){
-      const b64 = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
-      Android.saveExcel(b64, fileName);
-      alert('Excel Download Folder में Save हो गया: '+fileName);
-      return;
+  // Export exactly as shown on screen - use last filtered list
+  let list = lastPendingFilteredList && lastPendingFilteredList.length>0 ? lastPendingFilteredList : [];
+  if(list.length===0){
+    // If no cached list, compute same as renderPending
+    const fv=document.getElementById('filterVivechak')?.value||'all';
+    const fa=document.getElementById('filterAvadhi')?.value||'all';
+    const fb=document.getElementById('filterBase')?.value||'suchna';
+    const sort=document.getElementById('filterSort')?.value||'pending_desc';
+    const cf=document.getElementById('customFrom')?.value||'';
+    const ct=document.getElementById('customTo')?.value||'';
+    list=cases.filter(c=>c.aaropPatraStatus==='लंबित');
+    const u=getCurrentUser(); if(u&&u.role==='vivechak') list=list.filter(c=>c.vivechak===u.name);
+    if(fv!=='all') list=list.filter(c=>c.vivechak===fv);
+    const today=new Date();
+    if(fa!=='all'&&fa!=='custom'){
+      const days=parseInt(fa); const limit=new Date();
+      if(fa==='today'){limit.setHours(0,0,0,0);} else {limit.setDate(today.getDate()-days);}
+      list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=limit;});
     }
-    const wbout2 = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    const blob2 = new Blob([wbout2], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url2 = URL.createObjectURL(blob2);
-    const a2=document.createElement('a');
-    a2.href=url2;
-    a2.download=fileName;
-    document.body.appendChild(a2);
-    a2.click();
-    setTimeout(()=>{document.body.removeChild(a2); URL.revokeObjectURL(url2);}, 200);
-  }catch(e){ alert('Excel Export Error: '+(e.message||e)); console.error(e); }
+    if(fa==='custom'&&cf&&ct){
+      const from=new Date(cf),to=new Date(ct);
+      list=list.filter(c=>{const d=new Date(fb==='suchna'?c.dinankSuchna:c.dinankGhatna);return d>=from&&d<=to;});
+    }
+    list.sort((a,b)=>{const da=new Date(a.dinankSuchna||a.dinankGhatna),db=new Date(b.dinankSuchna||b.dinankGhatna);const pa=Math.floor((today-new Date(a.dinankSuchna||today))/86400000),pb=Math.floor((today-new Date(b.dinankSuchna||today))/86400000);if(sort==='pending_desc')return pb-pa;if(sort==='pending_asc')return pa-pb;if(sort==='suchna_desc')return db-da;if(sort==='suchna_asc')return da-db;if(sort==='mu_asc')return a.muAsNo.localeCompare(b.muAsNo);return 0;});
+    if(pendingSortField){
+      list.sort((a,b)=>{
+        let va, vb;
+        if(pendingSortField==='vivechak'){
+          const vA = vivechaks.find(v=>v.naam===a.vivechak); const vB = vivechaks.find(v=>v.naam===b.vivechak);
+          const pa = vA ? (typeof getPadRank==='function'?getPadRank(vA.pad):0) : 0;
+          const pb = vB ? (typeof getPadRank==='function'?getPadRank(vB.pad):0) : 0;
+          if(pa!==pb) return pendingSortOrder==='asc'? pb-pa : pa-pb;
+          va = a.vivechak||''; vb = b.vivechak||'';
+        } else if(pendingSortField==='suchna'){ va = a.dinankSuchna||''; vb = b.dinankSuchna||''; }
+        else if(pendingSortField==='muAsNo'){
+          const ka = typeof getExcelSortKey==='function'?getExcelSortKey(a):{year:9999,num:0,mu:a.muAsNo||''};
+          const kb = typeof getExcelSortKey==='function'?getExcelSortKey(b):{year:9999,num:0,mu:b.muAsNo||''};
+          if(ka.year!==kb.year) return pendingSortOrder==='asc'? ka.year-kb.year : kb.year-ka.year;
+          if(ka.num!==kb.num) return pendingSortOrder==='asc'? ka.num-kb.num : kb.num-ka.num;
+          va = ka.mu; vb = kb.mu;
+        }
+        if(va<vb) return pendingSortOrder==='asc'? -1:1;
+        if(va>vb) return pendingSortOrder==='asc'? 1:-1;
+        return 0;
+      });
+    }
+  }
+  if(list.length===0){ alert('कोई लंबित डेटा नहीं - पहले फिल्टर लगाएं'); return; }
+  const today=new Date();
+  const headers=["क्र0","मु0अ0सं0","धारा","विवेचक","पद","वादी","बनाम","घटना स्थल","सूचना दिनांक","घटना दिनांक","लंबित दिन","विवरण","स्थिति"];
+  const data=[headers];
+  list.forEach((c, idx)=>{
+    const days=Math.max(0, Math.floor((today - new Date(c.dinankSuchna||today))/86400000));
+    const v = vivechaks.find(vv=>vv.naam===c.vivechak);
+    const pad = v ? v.pad : '';
+    data.push([idx+1, c.muAsNo||'', c.dhara||'', c.vivechak||'', pad, c.wadi||'', c.banam||'', c.ghatnaSthal||'', formatDateForExport(c.dinankSuchna), formatDateForExport(c.dinankGhatna), days, c.vivaran||'', c.aaropPatraStatus||'']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:6},{wch:12},{wch:15},{wch:18},{wch:10},{wch:25},{wch:20},{wch:20},{wch:12},{wch:12},{wch:10},{wch:35},{wch:10}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Lambit_FR");
+  const filterName = document.getElementById('filterVivechak')?.value || 'All';
+  XLSX.writeFile(wb, 'Lambit_'+(filterName!=='all'?filterName+'_':'')+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 function updateBadge(){const el=document.getElementById('pendingBadge');if(el)el.textContent=cases.filter(c=>c.aaropPatraStatus==='लंबित').length;}
 document.getElementById('caseForm')?.addEventListener('submit',e=>{
@@ -1045,9 +1053,6 @@ function saveNistaran(){
   cases[idx].aaropPatraStatus=st;
   cases[idx].aaropPatraDinank=dt;
   cases[idx].updatedAt=Date.now();
-  window._lastChangedCase=cases[idx];
-  // Force sync this case to Firebase immediately
-  try{ if(typeof syncCaseToFirebase==='function'){ if(!fbDb) initFirebase(false); syncCaseToFirebase(cases[idx]); } }catch(e){}
   if(tempChargePdfData){
     cases[idx].chargeSheetPdfData=tempChargePdfData;
     cases[idx].chargeSheetPdfName=tempChargePdfName;
@@ -1159,29 +1164,7 @@ function finalSecureSubmit(){
   syncAllToFirebase();syncAllVivechaksToFirebase();savePasswordsToFirebase();
   setTimeout(()=>{const now=new Date().toISOString();localStorage.setItem(LS_FINAL,now);if(btn){btn.textContent='✅ सुरक्षित हो गया!';btn.className='mt-3 w-full bg-green-500 text-white py-3 rounded-xl font-bold';btn.disabled=false;}if(info){info.textContent='✅ अंतिम बार: '+new Date(now).toLocaleString();}if(msg){msg.classList.remove('hidden');msg.className='text-sm mt-3 p-3 rounded-xl bg-green-50 text-green-800 border-2 border-green-300 font-semibold';msg.innerHTML='🔒 <b>डेटा सुरक्षित!</b> '+cases.length+' केस, '+vivechaks.length+' विवेचक सेव।';}const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+cases.length+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}alert('✅ सुरक्षित! अब दोबारा खोलने पर यही दिखेगा।');},1500);
 }
-function loadFromFirebase(){if(!initFirebase(false))return;const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;try{if(window._fbUnsub)window._fbUnsub();}catch(e){}window._fbUnsub=fbDb.collection(coll).onSnapshot(snap=>{if(snap.empty){if(cases.length===0)renderAll();return;}const map={};snap.forEach(doc=>{const d=doc.data();if(d&&d.muAsNo)map[d.muAsNo]=d;}); // FIX: Firebase is source of truth - don't let old local overwrite new Firebase
-try{
-  const local=JSON.parse(localStorage.getItem(LS_CASES)||'[]');
-  local.forEach(c=>{
-    if(!c||!c.muAsNo) return;
-    if(!map[c.muAsNo]){
-      // case only in local, keep it
-      map[c.muAsNo]=c;
-    } else {
-      // both exist - keep Firebase version if Firebase is newer or equal
-      // Only use local if local is significantly newer (5 sec) and not yet synced
-      const fbTime = map[c.muAsNo].updatedAt||0;
-      const localTime = c.updatedAt||0;
-      if(localTime > fbTime + 5000){
-        // local is newer and not yet in firebase, keep local and push it
-        map[c.muAsNo]=c;
-        try{ syncCaseToFirebase(c); }catch(e){}
-      }
-      // else keep firebase version (fixes mobile vs desktop difference)
-    }
-  });
-}catch(e){}
-cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));renderAll();const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+snap.size+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}},err=>{const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent='एरर: '+err.message;}});}
+function loadFromFirebase(){if(!initFirebase(false))return;const coll=(JSON.parse(localStorage.getItem(LS_FB)||'{}').collection)||DEFAULT_FB_COLLECTION;try{if(window._fbUnsub)window._fbUnsub();}catch(e){}window._fbUnsub=fbDb.collection(coll).onSnapshot(snap=>{if(snap.empty){if(cases.length===0)renderAll();return;}const map={};snap.forEach(doc=>{const d=doc.data();if(d&&d.muAsNo)map[d.muAsNo]=d;});try{const local=JSON.parse(localStorage.getItem(LS_CASES)||'[]');local.forEach(c=>{if(c&&c.muAsNo&&(!map[c.muAsNo]||(c.updatedAt||0)>(map[c.muAsNo].updatedAt||0)))map[c.muAsNo]=c;});}catch(e){}cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));renderAll();const ss=document.getElementById('syncStatus');if(ss){ss.textContent='● सुरक्षित ('+snap.size+')';ss.className='text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-bold';}},err=>{const el=document.getElementById('fbMsg');if(el){el.classList.remove('hidden');el.className='text-xs bg-red-50 text-red-800 p-2 rounded';el.textContent='एरर: '+err.message;}});}
 function loadVivechaksFromFirebase(){if(!initFirebase(false))return;try{if(window._fbVUnsub)window._fbVUnsub();}catch(e){}window._fbVUnsub=fbDb.collection(DEFAULT_VIVECHAK_COLLECTION).onSnapshot(snap=>{if(snap.empty){return;}const list=[];snap.forEach(doc=>{const d=doc.data();if(d&&d.id&&d.naam)list.push(d);});if(list.length>0){vivechaks=list;localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderVivechakTable();renderDashboard();}});}
 
 function downloadImportTemplate(){
@@ -1260,9 +1243,6 @@ function processImportRows(rows){
 }
 function importBackup(e){const file=e.target.files[0];if(!file)return;if(!confirm('रिस्टोर?'))return;const reader=new FileReader();reader.onload=function(ev){try{const data=JSON.parse(ev.target.result);let cCount=0,vCount=0;if(data.cases&&Array.isArray(data.cases)){const map={};cases.forEach(c=>map[c.muAsNo]=c);data.cases.forEach(rc=>{if(!map[rc.muAsNo]||(rc.updatedAt||0)>(map[rc.muAsNo].updatedAt||0)){map[rc.muAsNo]=rc;cCount++;}});cases=Object.values(map);localStorage.setItem(LS_CASES,JSON.stringify(cases));}if(data.vivechaks&&Array.isArray(data.vivechaks)){const vmap={};vivechaks.forEach(v=>vmap[v.naam]=v);data.vivechaks.forEach(rv=>{if(!vmap[rv.naam]){vivechaks.push(rv);vCount++;}});localStorage.setItem(LS_VIVECHAK,JSON.stringify(vivechaks));}refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();renderAll();alert('रिस्टोर '+cCount+' केस '+vCount+' विवेचक');}catch(err){alert('एरर '+err.message);}e.target.value='';};reader.readAsText(file);}
 
-
-function isInAPK(){ try{ return typeof Android !== 'undefined' || navigator.userAgent.includes('wv') || window.location.protocol==='file:'; }catch(e){return false;} }
-
 function getStatusBadgeClass(status){
   if(!status) return 'bg-slate-100 text-slate-600';
   const s = status.toLowerCase();
@@ -1318,41 +1298,19 @@ function exportCSV(){
     const row = [muText,(c.dhara||'').replace(/"/g,'""'),ghatna,suchna,(c.ghatnaSthal||'').replace(/"/g,'""'),(c.wadi||'').replace(/"/g,'""'),(c.banam||'').replace(/"/g,'""'),(c.vivechak||'').replace(/"/g,'""'),(c.vivaran||'').replace(/"/g,'""'),c.aaropPatraStatus||'',aarop].map(v=>`"${v}"`).join(',');
     csv+=row+'\n';
   });
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='Ait_Cases_'+new Date().toISOString().slice(0,10)+'.csv'; document.body.appendChild(a); a.click(); setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(url);}, 200);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Ait_Cases_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
 }
 function exportExcel(){
-  try{
-    const headers=["मु0अ0सं0","धारा","घटना","सूचना","स्थल","वादी","बनाम","विवेचक","विवरण","स्थिति","दिनांक"];
-    const data=[headers];
-    let sorted = typeof getSortedCasesForExport==='function' ? getSortedCasesForExport() : cases.slice();
-    sorted.forEach(c=>{
-      data.push([{v:c.muAsNo, t:'s'}, c.dhara||'', formatDateForExport(c.dinankGhatna), formatDateForExport(c.dinankSuchna), c.ghatnaSthal||'', c.wadi||'', c.banam||'', c.vivechak||'', c.vivaran||'', c.aaropPatraStatus||'', formatDateForExport(c.aaropPatraDinank)]);
-    });
-    const ws=XLSX.utils.aoa_to_sheet(data);
-    ws['!cols']=[{wch:12},{wch:15},{wch:12},{wch:12},{wch:22},{wch:28},{wch:22},{wch:18},{wch:35},{wch:12},{wch:12}];
-    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Cases");
-    const fileName='Ait_Cases_'+new Date().toISOString().slice(0,10)+'_YearWise.xlsx';
-    // If in APK with Android interface, use it - no crash
-    if(typeof Android!=='undefined' && typeof Android.saveExcel==='function'){
-      const b64 = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
-      Android.saveExcel(b64, fileName);
-      alert('Excel Download Folder में Save हो गया: '+fileName);
-      return;
-    }
-    // Website / fallback - blob method
-    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
-    const blob = new Blob([wbout], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url = URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;
-    a.download=fileName;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(url);}, 200);
-  }catch(e){
-    alert('Excel Export Error: '+(e.message||e));
-    console.error(e);
-  }
+  const headers=["मु0अ0सं0","धारा","घटना","सूचना","स्थल","वादी","बनाम","विवेचक","विवरण","स्थिति","दिनांक"];
+  const data=[headers];
+  let sorted = typeof getSortedCasesForExport==='function' ? getSortedCasesForExport() : cases.slice();
+  sorted.forEach(c=>{
+    data.push([{v:c.muAsNo, t:'s'}, c.dhara||'', formatDateForExport(c.dinankGhatna), formatDateForExport(c.dinankSuchna), c.ghatnaSthal||'', c.wadi||'', c.banam||'', c.vivechak||'', c.vivaran||'', c.aaropPatraStatus||'', formatDateForExport(c.aaropPatraDinank)]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  ws['!cols']=[{wch:12},{wch:15},{wch:12},{wch:12},{wch:22},{wch:28},{wch:22},{wch:18},{wch:35},{wch:12},{wch:12}];
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Cases");
+  XLSX.writeFile(wb, 'Ait_Cases_'+new Date().toISOString().slice(0,10)+'_YearWise.xlsx');
 }
 function exportJSON(){const blob=new Blob([JSON.stringify({thana:'थाना एट',vivechaks,cases,secureAt:localStorage.getItem(LS_FINAL)},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Ait_Secure_Backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 (function(){const auth=localStorage.getItem(LS_AUTH);if(auth){try{document.getElementById('loginOverlay').classList.add('hidden');const u=JSON.parse(auth);const su=document.getElementById('sideUser');if(su)su.textContent=u.name+' ('+(u.role==='admin'?'Admin':'विवेचक')+')';}catch(e){}loadAll();}else{let v=JSON.parse(localStorage.getItem(LS_VIVECHAK)||'null');if(!v)v=[];vivechaks=v;refreshVivechakSelects(); loadCustomPads(); setupPdfInputs();}try{updatePassInfo();}catch(e){}})();
